@@ -2,6 +2,9 @@
 name = "wpilib-nativeutils"
 edition = "2021"
 version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 description = "Utility to pull down blocking things"
 
 [dependencies]

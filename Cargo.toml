@@ -5,10 +5,16 @@ members = [
     "wpihal-sys" 
 ]
 package.version = "2025.1.1-beta-2"
+package.license = "MIT OR Apache-2.0"
+package.authors = ["guineawheek <guineawheek@gmail.com>"]
+package.repository = "https://github.com/guineawheek/wpihal-rs"
 
 [package]
 name = "wpihal"
 version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
 edition = "2021"
 
 [dependencies]

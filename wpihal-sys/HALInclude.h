@@ -10,6 +10,7 @@
 #include "hal/CANAPI.h"
 #include "hal/CANAPITypes.h"
 
+// we don't include this header because its inclusion needs to be...conditional
 //#include "hal/ChipObject.h"
 
 #include "hal/Constants.h"
@@ -46,3 +47,5 @@
 #include "hal/Types.h"
 #include "hal/UsageReporting.h"
 #include "hal/Value.h"
+
+// simulation

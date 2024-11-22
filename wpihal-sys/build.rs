@@ -26,9 +26,10 @@ pub fn main() {
     download_artifacts(&repos, "edu.wpi.first.wpiutil", "wpiutil-cpp");
 
     println!("cargo:rustc-link-search={}", wpilib_nativeutils::lib_search_path(&buildlibs, &TARGET, SHARED).canonicalize().unwrap().to_str().unwrap());
-
+    println!("cargo:rerun-if-changed=HALInclude.h");
     wpilib_nativeutils::rustc_debug_switch(&["wpiHal", "wpiutil"], *DEBUG);
-
+    generate_bindings_for_header("HALInclude.h", r"(HAL_)\w+", "hal_bindings.rs");
+    generate_bindings_for_header("HALSIMInclude.h", r"(HALSIM_)\w+", "sim_bindings.rs");
 }
 
 fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
@@ -63,27 +64,27 @@ fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
     }).unwrap();
 }
 
-/*
-
+fn generate_bindings_for_header(header: &str, regex: &str, output: &str) {
   // Some config copied from first-rust-competition https://github.com/first-rust-competition/first-rust-competition/blob/master/hal-gen/src/main.rs
+  //const SYMBOL_REGEX: &str = r"(HAL_|HALSIM_)\w+";
   let bindings = bindgen::Builder::default()
-    .header("HALInclude.h")
+    .header(header)
     .derive_default(true)
-    .clang_arg(format!("-Ibuildlibs/{}/headers", target))
-    .whitelist_type(SYMBOL_REGEX)
-    .whitelist_function(SYMBOL_REGEX)
-    .whitelist_var(SYMBOL_REGEX)
+    .clang_arg(format!("-I{}", OUT_DIR.join("buildlibs/headers").as_os_str().to_str().unwrap()))
+    .allowlist_type(regex)
+    .allowlist_function(regex)
+    .allowlist_var(regex)
     .default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: false })
-    .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+    .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
     .clang_args(&[
-      format!("--target={}", target)    // See: https://github.com/rust-lang/rust-bindgen/issues/1760
+      format!("--target={}", *TARGET),    // See: https://github.com/rust-lang/rust-bindgen/issues/1760
     ])
+    .clang_arg("-xc++")
+    .clang_arg("-std=c++20")
     .generate()
     .expect("Unable to generate bindings");
 
-  let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
   bindings
-    .write_to_file(out_path.join("bindings.rs"))
+    .write_to_file(OUT_DIR.join(output))
     .expect("Couldn't write bindings!");
-
-*/
+}
