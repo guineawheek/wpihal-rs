@@ -28,17 +28,24 @@ pub fn main() {
     println!("cargo:rustc-link-search={}", wpilib_nativeutils::lib_search_path(&buildlibs, &TARGET, SHARED).canonicalize().unwrap().to_str().unwrap());
     println!("cargo:rerun-if-changed=HALInclude.h");
     wpilib_nativeutils::rustc_debug_switch(&["wpiHal", "wpiutil"], *DEBUG);
-    generate_bindings_for_header("HALInclude.h", r"(HAL_)\w+", "hal_bindings.rs");
-    generate_bindings_for_header("HALSIMInclude.h", r"(HALSIM_)\w+", "sim_bindings.rs");
+    generate_bindings_for_header(
+        bindgen::Builder::default(),
+        "HALInclude.h", r"(HAL_|WPI_)\w+", "hal_bindings.rs");
+    generate_bindings_for_header(bindgen::Builder::default(), "HALSIMInclude.h", r"(HALSIM_)\w+", "sim_bindings.rs");
+    //generate_bindings_for_header("WPIInclude.h", r"(WPI_)\w+", "wpi_bindings.rs");
 }
 
 fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
+
+    let buildlibs = OUT_DIR.join("buildlibs");
+    let cache_marker = buildlibs.join(format!(".nativeutils_downloaded_{group_id}.{artifact_id}-{}", VERSION.as_str()));
+    if cache_marker.exists() { return; }
+
     let (link_shared, link_static) = if *DEBUG { 
         (ArtifactType::Shared, ArtifactType::Static)
     } else {
         (ArtifactType::SharedDebug, ArtifactType::StaticDebug)
     };
-    let buildlibs = OUT_DIR.join("buildlibs");
 
     wpilib_nativeutils::download_artifact_zip_to_dir(&TARGET, &buildlibs.join("headers"), repos, &Artifact {
         artifact_type: ArtifactType::Headers,
@@ -47,7 +54,6 @@ fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
         version: &VERSION,
     }).unwrap();
 
-    #[cfg(feature = "shared")]
     wpilib_nativeutils::download_artifact_zip_to_dir(&TARGET, &buildlibs, repos, &Artifact {
         artifact_type: link_shared,
         group_id,
@@ -55,19 +61,21 @@ fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
         version: &VERSION,
     }).unwrap();
 
-    #[cfg(feature = "static")]
     wpilib_nativeutils::download_artifact_zip_to_dir(&TARGET, &buildlibs, repos, &Artifact {
         artifact_type: link_static,
         group_id,
         artifact_id,
         version: &VERSION
     }).unwrap();
+
+    std::fs::OpenOptions::new().create(true).write(true).open(cache_marker).ok();
+
 }
 
-fn generate_bindings_for_header(header: &str, regex: &str, output: &str) {
+fn generate_bindings_for_header(builder: bindgen::Builder, header: &str, regex: &str, output: &str) {
   // Some config copied from first-rust-competition https://github.com/first-rust-competition/first-rust-competition/blob/master/hal-gen/src/main.rs
   //const SYMBOL_REGEX: &str = r"(HAL_|HALSIM_)\w+";
-  let bindings = bindgen::Builder::default()
+  let bindings = builder
     .header(header)
     .derive_default(true)
     .clang_arg(format!("-I{}", OUT_DIR.join("buildlibs/headers").as_os_str().to_str().unwrap()))

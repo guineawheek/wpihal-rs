@@ -48,4 +48,8 @@
 #include "hal/UsageReporting.h"
 #include "hal/Value.h"
 
+// Some classes use WPI_String, so we include this.
+// The proper wpihal library will wrap this in safe abstractions that automatically Drop
+#include "wpi/string.h"
+
 // simulation
