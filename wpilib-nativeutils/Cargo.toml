@@ -1,0 +1,11 @@
+[package]
+name = "wpilib-nativeutils"
+edition = "2021"
+version.workspace = true
+description = "Utility to pull down blocking things"
+
+[dependencies]
+anyhow = "1.0.93"
+home = "0.5.9"
+reqwest = { version = "0.12.9", features = ["blocking"] }
+zip = "2.2.0"

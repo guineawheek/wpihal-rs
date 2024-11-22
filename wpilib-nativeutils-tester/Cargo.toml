@@ -1,0 +1,7 @@
+[package]
+name = "wpilib-nativeutils-tester"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+wpilib-nativeutils = { path = "../wpilib-nativeutils" }

@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "wpilib-nativeutils", 
+    "wpilib-nativeutils-tester", 
+    "wpihal-sys" 
+]
+package.version = "2025.1.1-beta-2"
+
+[package]
+name = "wpihal"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+wpihal-sys = { path = "./wpihal-sys" }

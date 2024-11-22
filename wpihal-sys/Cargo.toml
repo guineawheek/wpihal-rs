@@ -1,0 +1,14 @@
+[package]
+name = "wpihal-sys"
+version.workspace = true
+edition = "2021"
+
+[features]
+default = ["shared"]
+static = []
+shared = []
+
+[build-dependencies]
+wpilib-nativeutils = { path = "../wpilib-nativeutils" }
+
+[dependencies]
