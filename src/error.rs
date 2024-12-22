@@ -1,13 +1,13 @@
 // Parts borrowed from https://github.com/first-rust-competition/first-rust-competition/blob/master/wpilib-sys/src/hal_call.rs
 
 use core::fmt;
-use std::{borrow::Cow, ffi::CStr};
+use std::{borrow::Cow, ffi::{CStr, CString}};
 
-use wpihal_sys::hal::{HAL_GetErrorMessage, HAL_SendError};
+use wpihal_sys::{HAL_GetErrorMessage, HAL_SendConsoleLine, HAL_SendError};
 
 /// Sends a warning to the driver station.
-pub fn send_warning(code: i32, details: &CStr) {
-    unsafe {
+pub fn send_warning(code: i32, details: &CStr) -> HALResult<()> {
+    let v = unsafe {
         HAL_SendError(
             0,
             code,
@@ -16,13 +16,14 @@ pub fn send_warning(code: i32, details: &CStr) {
             c"".as_ptr(),
             c"".as_ptr(),
             1
-        );
-    }
+        )
+    };
+    if v != 0 { Err(HALError(v)) } else { Ok(()) }
 }
 
 /// Sends an error to the driver station.
-pub fn send_error(code: i32, details: &CStr) {
-    unsafe {
+pub fn send_error(code: i32, details: &CStr) -> HALResult<()> {
+    let v = unsafe {
         HAL_SendError(
             1,
             code,
@@ -31,8 +32,15 @@ pub fn send_error(code: i32, details: &CStr) {
             c"".as_ptr(),
             c"".as_ptr(),
             1
-        );
-    }
+        )
+    };
+    if v != 0 { Err(HALError(v)) } else { Ok(()) }
+}
+// We don't bother with HAL_SetPrintErrorImpl because frankly it's kinda nuts.
+
+pub fn send_console_line(line: &str) -> HALResult<()> {
+    let v = unsafe { HAL_SendConsoleLine(CString::new(line).unwrap().as_ptr()) };
+    if v != 0 { Err(HALError(v)) } else { Ok(()) }
 }
 
 /// Converts an Option<&CStr> into an allocation location pointer.

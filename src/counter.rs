@@ -1,8 +1,9 @@
-use wpihal_sys::hal::{HAL_ClearCounterDownSource, HAL_ClearCounterUpSource, HAL_CounterHandle, HAL_Counter_Mode, HAL_FreeCounter, HAL_GetCounter, HAL_GetCounterDirection, HAL_GetCounterPeriod, HAL_GetCounterSamplesToAverage, HAL_GetCounterStopped, HAL_Handle, HAL_InitializeCounter, HAL_ResetCounter, HAL_SetCounterAverageSize, HAL_SetCounterDownSource, HAL_SetCounterDownSourceEdge, HAL_SetCounterExternalDirectionMode, HAL_SetCounterMaxPeriod, HAL_SetCounterPulseLengthMode, HAL_SetCounterReverseDirection, HAL_SetCounterSamplesToAverage, HAL_SetCounterSemiPeriodMode, HAL_SetCounterUpDownMode, HAL_SetCounterUpSource, HAL_SetCounterUpSourceEdge, HAL_SetCounterUpdateWhenEmpty};
+use wpihal_sys::{HAL_ClearCounterDownSource, HAL_ClearCounterUpSource, HAL_CounterHandle, HAL_Counter_Mode, HAL_FreeCounter, HAL_GetCounter, HAL_GetCounterDirection, HAL_GetCounterPeriod, HAL_GetCounterSamplesToAverage, HAL_GetCounterStopped, HAL_Handle, HAL_InitializeCounter, HAL_ResetCounter, HAL_SetCounterAverageSize, HAL_SetCounterDownSource, HAL_SetCounterDownSourceEdge, HAL_SetCounterExternalDirectionMode, HAL_SetCounterMaxPeriod, HAL_SetCounterPulseLengthMode, HAL_SetCounterReverseDirection, HAL_SetCounterSamplesToAverage, HAL_SetCounterSemiPeriodMode, HAL_SetCounterUpDownMode, HAL_SetCounterUpSource, HAL_SetCounterUpSourceEdge, HAL_SetCounterUpdateWhenEmpty};
 
 use crate::{analog_trigger::AnalogTriggerType, error::HALResult, hal_call};
 
 
+pub type CounterMode = HAL_Counter_Mode;
 
 pub struct Counter {
     handle: HAL_CounterHandle,

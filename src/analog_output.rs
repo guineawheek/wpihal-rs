@@ -1,10 +1,11 @@
 use std::ffi::CStr;
 
-use wpihal_sys::hal::{HAL_AnalogOutputHandle, HAL_CheckAnalogOutputChannel, HAL_FreeAnalogOutputPort, HAL_GetAnalogOutput, HAL_InitializeAnalogOutputPort, HAL_PortHandle, HAL_SetAnalogOutput};
+use wpihal_sys::{HAL_AnalogOutputHandle, HAL_CheckAnalogOutputChannel, HAL_FreeAnalogOutputPort, HAL_GetAnalogOutput, HAL_InitializeAnalogOutputPort, HAL_PortHandle, HAL_SetAnalogOutput};
 
 use crate::{error::{allocation_location_ptr, HALResult}, hal_call};
 
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct AnalogOutput(HAL_AnalogOutputHandle);
 
 impl AnalogOutput {

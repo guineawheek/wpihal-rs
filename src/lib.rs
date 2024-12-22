@@ -1,7 +1,7 @@
 use std::{ffi::CStr, time::Duration};
 
 use error::{HALError, HALResult};
-use wpihal_sys::hal::{HAL_ExpandFPGATime, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount, HAL_GetFPGAButton, HAL_GetFPGATime, HAL_GetFPGAVersion, HAL_GetLastError, HAL_GetPort, HAL_GetPortWithModule, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber, HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond, HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize, HAL_PortHandle, HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter, HAL_SimPeriodicBefore, WPI_String};
+use wpihal_sys::{HAL_ExpandFPGATime, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount, HAL_GetFPGAButton, HAL_GetFPGATime, HAL_GetFPGAVersion, HAL_GetLastError, HAL_GetPort, HAL_GetPortWithModule, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber, HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond, HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize, HAL_PortHandle, HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter, HAL_SimPeriodicBefore, WPI_String};
 use wpistring::AllocatedWPIString;
 
 /// this is the higher level package
@@ -32,12 +32,20 @@ pub mod counter;
 pub mod ctre_pcm;
 /// digital i/o
 pub mod dio;
+
+/// TODO
+pub mod dma;
+
+/// driver station data
+pub mod driver_station;
+/// duty cycle input
+pub mod duty_cycle;
+/// quadrature encoders
+pub mod encoder;
+
+
 /*
-dio
 dma
-driverstation
-dutycycle
-encoder
 errors
 extensions
 frcusagereporting
@@ -48,6 +56,16 @@ halbase
 pub mod error;
 pub mod wpistring;
 
+/// Trait for a struct that wraps a handle value
+pub trait Handle<T> {
+    /// Fetches the raw handle.
+    /// Unsafe because usage of the raw handle can violate ownership.
+    unsafe fn raw_handle(&self) -> T;
+    /// Creates a new instance of the struct from a raw handle.
+    /// Unsafe because usage of the raw handle can violate ownership -- 
+    /// in particular, dropping the new object may cause double-frees.
+    unsafe fn from_raw_handle(handle: T) -> Self;
+}
 
 /// Wraps a C/C++ HAL function call that looks like `T foo(arg1, arg2, arg3, ... , int32_t* status)`
 /// and turns that status into a `HALResult<T>`, with a non-zero status code returning in
@@ -70,14 +88,14 @@ macro_rules! hal_call {
     }};
 }
 
-pub fn get_system_clock_ticker_per_microsecond() -> i32 {
+pub fn get_system_clock_ticks_per_microsecond() -> i32 {
     unsafe { HAL_GetSystemClockTicksPerMicrosecond() }
 }
 
 /// unlike the actual hal call this allocates.
 /// mostly to prevent clobbering later on.
 pub fn get_last_error() -> (HALError, String) {
-    let mut status = 0i32;
+    let mut status = wpihal_sys::HAL_USE_LAST_ERROR;
     unsafe {
         let cs = CStr::from_ptr(HAL_GetLastError(&mut status));
         (HALError(status), cs.to_string_lossy().to_string())
@@ -117,7 +135,6 @@ pub fn get_system_active() -> HALResult<bool> {
     Ok(hal_call!(HAL_GetSystemActive())? != 0)
 }
 
-/// certified kraken moment
 pub fn get_browned_out() -> HALResult<bool> {
     Ok(hal_call!(HAL_GetBrownedOut())? != 0)
 }

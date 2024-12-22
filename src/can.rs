@@ -1,4 +1,4 @@
-use wpihal_sys::hal::{HAL_CANStreamMessage, HAL_CAN_CloseStreamSession, HAL_CAN_GetCANStatus, HAL_CAN_OpenStreamSession, HAL_CAN_ReadStreamSession, HAL_CAN_ReceiveMessage, HAL_CAN_SendMessage, HAL_CAN_SEND_PERIOD_NO_REPEAT, HAL_CAN_SEND_PERIOD_STOP_REPEATING};
+use wpihal_sys::{HAL_CANStreamMessage, HAL_CAN_CloseStreamSession, HAL_CAN_GetCANStatus, HAL_CAN_OpenStreamSession, HAL_CAN_ReadStreamSession, HAL_CAN_ReceiveMessage, HAL_CAN_SendMessage, HAL_CAN_SEND_PERIOD_NO_REPEAT, HAL_CAN_SEND_PERIOD_STOP_REPEATING};
 
 use crate::{error::HALResult, hal_call};
 
@@ -9,11 +9,11 @@ pub const SEND_PERIOD_STOP_REPEATING: i32 = HAL_CAN_SEND_PERIOD_STOP_REPEATING;
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct CANStatus {
-    percent_bus_utilization: f32,
-    bus_off_count: u32,
-    tx_full_count: u32,
-    receive_error_count: u32,
-    transmit_error_count: u32
+    pub percent_bus_utilization: f32,
+    pub bus_off_count: u32,
+    pub tx_full_count: u32,
+    pub receive_error_count: u32,
+    pub transmit_error_count: u32
 }
 
 #[derive(PartialEq, Eq, Debug)]

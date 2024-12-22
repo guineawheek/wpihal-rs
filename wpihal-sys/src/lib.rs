@@ -5,6 +5,4 @@
 #![allow(rustdoc::broken_intra_doc_links)]
 #![allow(unused)]
 
-pub mod hal;
-pub mod sim;
-//pub mod wpi;
+include!(concat!(env!("OUT_DIR"), "/hal_bindings.rs"));

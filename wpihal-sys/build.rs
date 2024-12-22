@@ -31,7 +31,8 @@ pub fn main() {
     generate_bindings_for_header(
         bindgen::Builder::default(),
         "HALInclude.h", r"(HAL_|WPI_)\w+", "hal_bindings.rs");
-    generate_bindings_for_header(bindgen::Builder::default(), "HALSIMInclude.h", r"(HALSIM_)\w+", "sim_bindings.rs");
+    //generate_bindings_for_header(bindgen::Builder::default(), "HALSIMInclude.h", r"(HALSIM_)\w+", "sim_bindings.rs");
+    generate_bindings_for_header(bindgen::Builder::default(), headers.join("hal/Errors.h").as_os_str().to_str().unwrap(), ".*", "error_bindings.rs");
     //generate_bindings_for_header("WPIInclude.h", r"(WPI_)\w+", "wpi_bindings.rs");
 }
 

@@ -1,5 +1,5 @@
-use wpihal_sys::hal::{HAL_GetAccelerometerX, HAL_GetAccelerometerY, HAL_GetAccelerometerZ, HAL_SetAccelerometerActive, HAL_SetAccelerometerRange};
-pub use wpihal_sys::hal::HAL_AccelerometerRange as AccelerometerRange;
+use wpihal_sys::{HAL_GetAccelerometerX, HAL_GetAccelerometerY, HAL_GetAccelerometerZ, HAL_SetAccelerometerActive, HAL_SetAccelerometerRange};
+pub use wpihal_sys::HAL_AccelerometerRange as AccelerometerRange;
 
 ///
 /// Sets the accelerometer to active or standby mode.
@@ -15,9 +15,9 @@ pub fn set_accelerometer_active(active: bool) {
 
 ///
 /// Sets the range of values that can be measured (either 2, 4, or 8 g-forces).
-//
+///
 /// The accelerometer should be in standby mode when this is called.
-//
+///
 /// @param range the accelerometer range
 ///
 pub fn set_accelerometer_range(range: AccelerometerRange) {
@@ -26,9 +26,9 @@ pub fn set_accelerometer_range(range: AccelerometerRange) {
 
 ///
 /// Gets the x-axis acceleration.
-//
+///
 /// This is a floating point value in units of 1 g-force.
-//
+///
 /// @return the X acceleration
 ///
 pub fn get_accelerometer_x() -> f64 {
@@ -37,9 +37,9 @@ pub fn get_accelerometer_x() -> f64 {
 
 ///
 /// Gets the y-axis acceleration.
-//
+///
 /// This is a floating point value in units of 1 g-force.
-//
+///
 /// @return the Y acceleration
 ///
 pub fn get_accelerometer_y() -> f64 {
@@ -48,9 +48,9 @@ pub fn get_accelerometer_y() -> f64 {
 
 ///
 /// Gets the z-axis acceleration.
-//
+///
 /// This is a floating point value in units of 1 g-force.
-//
+///
 /// @return the Z acceleration
 ///
 pub fn get_accelerometer_z() -> f64 {
