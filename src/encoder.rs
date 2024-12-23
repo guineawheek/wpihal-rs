@@ -1,6 +1,6 @@
-use wpihal_sys::{HAL_EncoderEncodingType, HAL_EncoderHandle, HAL_EncoderIndexingType, HAL_FreeEncoder, HAL_GetEncoder, HAL_GetEncoderDecodingScaleFactor, HAL_GetEncoderDirection, HAL_GetEncoderDistance, HAL_GetEncoderDistancePerPulse, HAL_GetEncoderEncodingScale, HAL_GetEncoderEncodingType, HAL_GetEncoderFPGAIndex, HAL_GetEncoderPeriod, HAL_GetEncoderRate, HAL_GetEncoderRaw, HAL_GetEncoderStopped, HAL_InitializeEncoder, HAL_ResetEncoder, HAL_SetEncoderDistancePerPulse, HAL_SetEncoderIndexSource, HAL_SetEncoderMaxPeriod, HAL_SetEncoderMinRate, HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice, HAL_SimDeviceHandle};
+use wpihal_sys::{HAL_EncoderEncodingType, HAL_EncoderHandle, HAL_EncoderIndexingType, HAL_FreeEncoder, HAL_GetEncoder, HAL_GetEncoderDecodingScaleFactor, HAL_GetEncoderDirection, HAL_GetEncoderDistance, HAL_GetEncoderDistancePerPulse, HAL_GetEncoderEncodingScale, HAL_GetEncoderEncodingType, HAL_GetEncoderFPGAIndex, HAL_GetEncoderPeriod, HAL_GetEncoderRate, HAL_GetEncoderRaw, HAL_GetEncoderStopped, HAL_InitializeEncoder, HAL_ResetEncoder, HAL_SetEncoderDistancePerPulse, HAL_SetEncoderIndexSource, HAL_SetEncoderMaxPeriod, HAL_SetEncoderMinRate, HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice};
 
-use crate::{dio::DigitalSource, error::HALResult, hal_call};
+use crate::{dio::DigitalSource, error::HALResult, hal_call, sim_device::SimDevice};
 
 pub type IndexingType = HAL_EncoderIndexingType;
 pub type EncodingType = HAL_EncoderEncodingType;
@@ -27,8 +27,8 @@ impl<'a> Encoder<'a> {
         })
     }
 
-    pub fn set_sim_device(&mut self, device: HAL_SimDeviceHandle) {
-        unsafe { HAL_SetEncoderSimDevice(self.handle, device);}
+    pub fn set_sim_device(&mut self, device: &SimDevice) {
+        unsafe { HAL_SetEncoderSimDevice(self.handle, device.handle());}
     }
 
     pub fn get(&self) -> HALResult<i32> {

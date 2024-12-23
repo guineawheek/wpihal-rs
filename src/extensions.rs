@@ -1,13 +1,12 @@
-use std::{ffi::{c_void, CStr, CString}, path::Path};
+use std::ffi::{c_void, CStr};
 
 use wpihal_sys::{HAL_LoadExtensions, HAL_LoadOneExtension, HAL_OnShutdown, HAL_RegisterExtension, HAL_RegisterExtensionListener, HAL_SetShowExtensionsNotFoundMessages};
 
 use crate::HAL_rust_wpihal_linkage_trampoline;
 
 
-pub fn load_one_extension(library: &Path) -> i32 {
-    let s = CString::new(library.as_os_str().to_string_lossy().as_bytes()).unwrap();
-    unsafe { HAL_LoadOneExtension(s.as_ptr()) }
+pub fn load_one_extension(library: &CStr) -> i32 {
+    unsafe { HAL_LoadOneExtension(library.as_ptr()) }
 }
 
 pub fn load_extensions() -> i32 {
@@ -45,5 +44,3 @@ pub fn on_shutdown(f: fn()) {
         HAL_OnShutdown(f as *mut c_void, Some(HAL_rust_wpihal_linkage_trampoline));
     }
 }
-
-// HAL_OnShutdown omitted

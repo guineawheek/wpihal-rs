@@ -1,6 +1,6 @@
 # wpihal-rs
 
-Safe-enough:tm: WPILib HAL bindings in Rust
+Safe-enough™️ WPILib HAL bindings in Rust
 
 ## Installation
 
@@ -24,7 +24,7 @@ Besides the obvious "run your robot off of Rust", HAL bindings also have additio
 * Vendor drivers
 * Other pieces of native code run in FRC contexts that would benefit from not having to compile under 3 different C++ compilers of varying versions
 
-This library does _not_ wrap ChipObject/HMB or FRCNetComm directly
+This library does _not_ wrap ChipObject/HMB or FRCNetComm directly; if you want that you'll need to do that yourself.
 
 
 ## Overall goals
@@ -34,6 +34,7 @@ This crate in general aims for correct, safe behavior.
 Actual achievements of these aims is not certain and there are almost certainly subtle soundness holes, but given this is a wrapper crate for a WPILib component and not a Rust RFC those holes may have a chance of being fixed this century if found.
 
 * RAII wrappers for all the session handles that automatically close handles on `Drop`
+ * Also implement `Drop` for things that typically require a manual free
 * `HALResult<T>` wrappers over status fields
 * Vague sense of maintaining aliasing xor mutability
  * Lifetime abuse to ensure that super-peripheral handles don't get `Drop`ed before their child peripherals do (e.g. DIOs don't get dropped before LED handles)
@@ -42,5 +43,5 @@ Actual achievements of these aims is not certain and there are almost certainly 
 
 ## Things that could use some work
 * Testing on real hardware
-* Modifying bindgen config to strip some of the unnecessarily verbose prefixes from enums in `wpihal-sys`
-* Adding some cxx bindgen to wrap `SerialHelper.h`...?
+* Better guards against WPILib's overuse of `i32`s for things that are NOT i32 sized
+* macro-ized halsim wrapers

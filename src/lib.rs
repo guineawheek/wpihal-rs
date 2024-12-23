@@ -42,8 +42,6 @@ pub mod duty_cycle;
 pub mod encoder;
 /// HAL extensions
 pub mod extensions;
-/// usage reporting
-pub mod usage_reporting;
 /// I2C transactions (may freeze your rio)
 pub mod i2c;
 /// interrupts
@@ -58,6 +56,26 @@ pub mod notifier;
 pub mod ports;
 /// power
 pub mod power;
+/// power distribution
+pub mod power_distribution;
+/// Threads
+pub mod threads;
+/// PWM output
+pub mod pwm;
+/// relays
+pub mod relay;
+/// rev pneumatic hub
+pub mod rev_ph;
+/// serial ports
+pub mod serial_port;
+/// simdevice
+pub mod sim_device;
+/// SPI
+pub mod spi;
+/// usage reporting
+pub mod usage_reporting;
+/// HALValue
+pub mod value;
 
 /*
 dma

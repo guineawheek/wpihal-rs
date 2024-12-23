@@ -1,8 +1,8 @@
 use std::ffi::CStr;
 
-use wpihal_sys::{HAL_AllocateDigitalPWM, HAL_CheckDIOChannel, HAL_DigitalHandle, HAL_DigitalPWMHandle, HAL_FreeDIOPort, HAL_FreeDigitalPWM, HAL_GetDIO, HAL_GetDIODirection, HAL_GetFilterPeriod, HAL_GetFilterSelect, HAL_InitializeDIOPort, HAL_IsAnyPulsing, HAL_IsPulsing, HAL_PortHandle, HAL_Pulse, HAL_PulseMultiple, HAL_SetDIO, HAL_SetDIOSimDevice, HAL_SetDigitalPWMDutyCycle, HAL_SetDigitalPWMOutputChannel, HAL_SetDigitalPWMPPS, HAL_SetDigitalPWMRate, HAL_SetFilterPeriod, HAL_SetFilterSelect, HAL_SimDeviceHandle};
+use wpihal_sys::{HAL_AllocateDigitalPWM, HAL_CheckDIOChannel, HAL_DigitalHandle, HAL_DigitalPWMHandle, HAL_FreeDIOPort, HAL_FreeDigitalPWM, HAL_GetDIO, HAL_GetDIODirection, HAL_GetFilterPeriod, HAL_GetFilterSelect, HAL_InitializeDIOPort, HAL_IsAnyPulsing, HAL_IsPulsing, HAL_PortHandle, HAL_Pulse, HAL_PulseMultiple, HAL_SetDIO, HAL_SetDIOSimDevice, HAL_SetDigitalPWMDutyCycle, HAL_SetDigitalPWMOutputChannel, HAL_SetDigitalPWMPPS, HAL_SetDigitalPWMRate, HAL_SetFilterPeriod, HAL_SetFilterSelect};
 
-use crate::{analog_trigger::{AnalogTrigger, AnalogTriggerType}, error::{allocation_location_ptr, HALResult}, hal_call, Handle};
+use crate::{analog_trigger::{AnalogTrigger, AnalogTriggerType}, error::{allocation_location_ptr, HALResult}, hal_call, sim_device::SimDevice, Handle};
 
 
 #[repr(i32)]
@@ -32,9 +32,8 @@ impl DIO {
         Ok(Self(hal_call!(HAL_InitializeDIOPort(port, input as i32, allocation_location_ptr(allocation_location)))?))
     }
 
-    // TODO: dejankify
-    pub fn set_sim_device(&mut self, handle: HAL_SimDeviceHandle) {
-        unsafe { HAL_SetDIOSimDevice(self.0, handle); }
+    pub fn set_sim_device(&mut self, handle: &SimDevice) {
+        unsafe { HAL_SetDIOSimDevice(self.0, handle.handle()); }
     }
 
     pub fn set(&mut self, value: bool) -> HALResult<()> {
@@ -83,6 +82,11 @@ impl DIO {
     pub fn get_filter_period(filter: DigitalInputFilterIndex) -> HALResult<u64> {
         Ok(hal_call!(HAL_GetFilterPeriod(filter as i32))? as u64)
     }
+
+    pub fn check_channel(channel: i32) -> bool {
+        unsafe { HAL_CheckDIOChannel(channel) != 0 }
+    }
+
 }
 
 
@@ -100,10 +104,6 @@ impl Handle<HAL_DigitalHandle> for DIO {
     unsafe fn from_raw_handle(handle: HAL_DigitalHandle) -> Self {
         Self(handle)
     }
-}
-
-pub fn check_dio_channel(channel: i32) -> bool {
-    unsafe { HAL_CheckDIOChannel(channel) != 0 }
 }
 
 pub struct DigitalPWM(HAL_DigitalPWMHandle);

@@ -21,12 +21,13 @@ impl AnalogOutput {
         hal_call!(HAL_GetAnalogOutput(self.0))
     }
 
-    pub unsafe fn free(self) {
-        // entirely possible this is Droppable
-        unsafe { HAL_FreeAnalogOutputPort(self.0); }
+    pub fn check_channel(channel: i32) -> bool {
+        unsafe { HAL_CheckAnalogOutputChannel(channel) != 0 }
     }
 }
 
-pub fn check_analog_output_channel(channel: i32) -> bool {
-    unsafe { HAL_CheckAnalogOutputChannel(channel) != 0 }
+impl Drop for AnalogOutput {
+    fn drop(&mut self) {
+        unsafe { HAL_FreeAnalogOutputPort(self.0); }
+    }
 }
