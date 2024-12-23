@@ -8,3 +8,4 @@ edition = "2021"
 
 [dependencies]
 wpilib-nativeutils = { path = "../wpilib-nativeutils" }
+regex = "1.11.1"

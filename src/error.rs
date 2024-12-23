@@ -75,7 +75,7 @@ impl HALError {
     pub fn send_error(&self) {
         unsafe {
             let details = HAL_GetErrorMessage(self.0);
-            send_error(self.0, CStr::from_ptr(details));
+            send_error(self.0, CStr::from_ptr(details)).ok();
         }
     }
 }

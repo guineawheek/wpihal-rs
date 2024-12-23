@@ -1,6 +1,6 @@
 use wpihal_sys::{HAL_EncoderEncodingType, HAL_EncoderHandle, HAL_EncoderIndexingType, HAL_FreeEncoder, HAL_GetEncoder, HAL_GetEncoderDecodingScaleFactor, HAL_GetEncoderDirection, HAL_GetEncoderDistance, HAL_GetEncoderDistancePerPulse, HAL_GetEncoderEncodingScale, HAL_GetEncoderEncodingType, HAL_GetEncoderFPGAIndex, HAL_GetEncoderPeriod, HAL_GetEncoderRate, HAL_GetEncoderRaw, HAL_GetEncoderStopped, HAL_InitializeEncoder, HAL_ResetEncoder, HAL_SetEncoderDistancePerPulse, HAL_SetEncoderIndexSource, HAL_SetEncoderMaxPeriod, HAL_SetEncoderMinRate, HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice, HAL_SimDeviceHandle};
 
-use crate::{analog_trigger::{AnalogTrigger, AnalogTriggerType}, dio::DIO, error::HALResult, hal_call, Handle};
+use crate::{dio::DigitalSource, error::HALResult, hal_call};
 
 pub type IndexingType = HAL_EncoderIndexingType;
 pub type EncodingType = HAL_EncoderEncodingType;
@@ -8,35 +8,12 @@ pub type EncodingType = HAL_EncoderEncodingType;
 #[derive(Debug, PartialEq, Eq)]
 pub struct Encoder<'a> {
     handle: HAL_EncoderHandle,
-    a_channel: EncoderChannel<'a>,
-    b_channel: EncoderChannel<'a>,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum EncoderChannel<'a> {
-    DigitalInput(&'a DIO),
-    AnalogTrigger(&'a AnalogTrigger<'a>, AnalogTriggerType),
-}
-
-impl<'a> EncoderChannel<'a> {
-    pub fn analog_trigger_type(&self) -> AnalogTriggerType {
-        match self {
-            EncoderChannel::DigitalInput(_) => AnalogTriggerType::HAL_Trigger_kInWindow,
-            EncoderChannel::AnalogTrigger(_, hal_analog_trigger_type) => *hal_analog_trigger_type
-        }
-    }
-    pub unsafe fn raw_handle(&self) -> i32 {
-        unsafe {
-            match self {
-                EncoderChannel::DigitalInput(d) => d.raw_handle(),
-                EncoderChannel::AnalogTrigger(a, _) => a.raw_handle(),
-            }
-        } 
-    }
+    a_channel: DigitalSource<'a>,
+    b_channel: DigitalSource<'a>,
 }
 
 impl<'a> Encoder<'a> {
-    pub fn initialize(a_channel: EncoderChannel<'a>, b_channel: EncoderChannel<'a>, reverse_dir: bool, encoding: EncodingType) -> HALResult<Self> {
+    pub fn initialize(a_channel: DigitalSource<'a>, b_channel: DigitalSource<'a>, reverse_dir: bool, encoding: EncodingType) -> HALResult<Self> {
         let handle = hal_call!(HAL_InitializeEncoder(
             a_channel.raw_handle(), a_channel.analog_trigger_type(),
             b_channel.raw_handle(), b_channel.analog_trigger_type(),
@@ -110,7 +87,7 @@ impl<'a> Encoder<'a> {
         hal_call!(HAL_SetEncoderReverseDirection(self.handle, samples_to_average))
     }
 
-    pub fn set_index_source(&mut self, index_pin: EncoderChannel<'a>, indexing_type: IndexingType) -> HALResult<()> {
+    pub fn set_index_source(&mut self, index_pin: DigitalSource<'a>, indexing_type: IndexingType) -> HALResult<()> {
         hal_call!(HAL_SetEncoderIndexSource(
             self.handle,
             index_pin.raw_handle(),
@@ -133,6 +110,10 @@ impl<'a> Encoder<'a> {
 
     pub fn get_encoding_type(&self) -> HALResult<EncodingType> {
         hal_call!(HAL_GetEncoderEncodingType(self.handle))
+    }
+
+    pub unsafe fn raw_handle(&self) -> HAL_EncoderHandle {
+        self.handle
     }
 
 }

@@ -15,5 +15,6 @@ shared = []
 [build-dependencies]
 wpilib-nativeutils = { path = "../wpilib-nativeutils" }
 bindgen = "0.70.1"
+regex = "1.11.1"
 
 [dependencies]

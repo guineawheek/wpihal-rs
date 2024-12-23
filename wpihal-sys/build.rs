@@ -1,7 +1,8 @@
 #![allow(unused)]
 
-use std::{sync::LazyLock, path::{Path, PathBuf}};
+use std::{collections::BTreeMap, path::{Path, PathBuf}, sync::LazyLock};
 
+use bindgen::callbacks::ParseCallbacks;
 use wpilib_nativeutils::{Artifact, ArtifactType, MavenRepo, ReleaseTrain};
 
 static VERSION: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
@@ -69,6 +70,13 @@ fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
         version: &VERSION
     }).unwrap();
 
+    create_usage_reporting(
+        &OUT_DIR.join("buildlibs/headers/hal/FRCUsageReporting.h"),
+        &OUT_DIR.join("usage_reporting.rs")
+    );
+
+    // 
+
     std::fs::OpenOptions::new().create(true).write(true).open(cache_marker).ok();
 
 }
@@ -85,6 +93,7 @@ fn generate_bindings_for_header(builder: bindgen::Builder, header: &str, regex: 
     .allowlist_var(regex)
     .default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: false })
     .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+    .parse_callbacks(Box::new(WPIHalCallbacks{}))
     .clang_args(&[
       format!("--target={}", *TARGET),    // See: https://github.com/rust-lang/rust-bindgen/issues/1760
     ])
@@ -96,4 +105,88 @@ fn generate_bindings_for_header(builder: bindgen::Builder, header: &str, regex: 
   bindings
     .write_to_file(OUT_DIR.join(output))
     .expect("Couldn't write bindings!");
+}
+
+#[derive(Debug)]
+pub struct WPIHalCallbacks {}
+
+impl ParseCallbacks for WPIHalCallbacks {
+
+    fn enum_variant_name(
+        &self,
+        enum_name: Option<&str>,
+        original_variant_name: &str,
+        _variant_value: bindgen::callbacks::EnumVariantValue,
+    ) -> Option<String> {
+        let enum_name = enum_name?;
+        let name = format!("{}_", enum_name);
+        if original_variant_name.starts_with(name.as_str()) {
+            let ov_name = original_variant_name.strip_prefix(name.as_str()).unwrap();
+            Some(ov_name.to_string())
+        } else {
+            // rewrite enums to not have prefixes
+            let prefix = match enum_name {
+                "HAL_AnalogTriggerType" => "HAL_Trigger_",
+                "HAL_CANManufacturer" => "HAL_CAN_Man_",
+                "HAL_CANDeviceType" => "HAL_CAN_Dev_",
+                "HAL_Counter_Mode" => "HAL_Counter_",
+                "HAL_MatchType" => "HAL_",
+                "HAL_EncoderIndexingType" => "HAL_",
+                "HAL_EncoderEncodingType" => "HAL_Encoder_",
+                "HAL_I2CPort" => "HAL_I2C_",
+                "HAL_RadioLEDState" => "HAL_RadioLED_",
+                "HAL_SPIPort" => "HAL_SPI_",
+                "HAL_SPIMode" => "HAL_SPI_",
+                _ => { return None; }
+            };
+
+            Some(original_variant_name.strip_prefix(prefix).unwrap().to_string())
+        }
+    }
+}
+pub struct ResourceEnumBuilder {
+    name: String,
+    variants: BTreeMap<String, i32>
+}
+
+impl ResourceEnumBuilder {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            variants: Default::default(),
+        }
+    }
+    pub fn generate_enum(&self) -> String {
+        let mut s = format!("#[derive(Debug, Copy, Clone, PartialEq, Eq)]\n#[repr(i32)]\npub enum {} {{\n", self.name);
+        let mut variants: Vec<(&String, &i32)> = self.variants.iter().collect();
+        variants.sort_by(|(_, v1), (_, v2)| { v1.cmp(v2) });
+        for (k, v) in variants {
+            s.push_str(format!("    k{k} = {v},\n").as_str());
+        }
+        s.push_str("}\n");
+        s
+    }
+}
+
+fn create_usage_reporting(header: &PathBuf, output: &PathBuf) {
+    let file = std::fs::read_to_string(header).unwrap();
+    let re = regex::Regex::new(r"\s+k([a-zA-Z0-9]+)_([a-zA-Z0-9_]+) = ([0-9]+),").unwrap();
+    let mut enum_ents: BTreeMap<&str, ResourceEnumBuilder> = Default::default();
+
+    for (_, [enum_name, enum_var, value]) in re.captures_iter(file.as_str()).map(|cap| cap.extract()) {
+        if !enum_ents.contains_key(enum_name) {
+            enum_ents.insert(enum_name, ResourceEnumBuilder::new(enum_name));
+        }
+        let ent = enum_ents.get_mut(enum_name).unwrap();
+
+        ent.variants.insert(enum_var.to_string(), value.parse::<i32>().unwrap());
+    }
+
+    let mut usage_module = String::new();
+
+    for ent in enum_ents.values() {
+        usage_module.push_str(&ent.generate_enum());
+    }
+
+    std::fs::write(output, usage_module).unwrap();
 }

@@ -20,7 +20,6 @@ impl<'a> AnalogTrigger<'a> {
         Ok(Self(hal_call!(HAL_InitializeAnalogTrigger(handle.raw_handle()))?, AnalogTriggerInput::AnalogInput(handle)))
     }
 
-    // TODO: this is wrong
     pub fn initialize_duty_cycle(handle: &'a DutyCycle<'a>) -> HALResult<Self> {
         Ok(Self(hal_call!(HAL_InitializeAnalogTriggerDutyCycle(handle.raw_handle()))?, AnalogTriggerInput::DutyCycle(handle)))
     }

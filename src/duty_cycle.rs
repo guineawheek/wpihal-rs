@@ -18,7 +18,7 @@ enum DutyCycleSource<'a> {
 
 impl<'a> DutyCycle<'a> {
     pub fn initialize_from_dio(dio: &'a DIO) -> HALResult<Self> {
-        let handle = hal_call!(HAL_InitializeDutyCycle(dio.raw_handle(), AnalogTriggerType::HAL_Trigger_kInWindow))?;
+        let handle = hal_call!(HAL_InitializeDutyCycle(dio.raw_handle(), AnalogTriggerType::kInWindow))?;
         Ok(Self { handle, src: DutyCycleSource::DigitalHandle(dio) })
     }
 

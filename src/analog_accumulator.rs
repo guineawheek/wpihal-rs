@@ -1,4 +1,4 @@
-use wpihal_sys::{HAL_GetAccumulatorCount, HAL_GetAccumulatorOutput, HAL_GetAccumulatorValue, HAL_InitAccumulator, HAL_ResetAccumulator, HAL_SetAccumulatorCenter, HAL_SetAccumulatorDeadband};
+use wpihal_sys::{HAL_AnalogInputHandle, HAL_GetAccumulatorCount, HAL_GetAccumulatorOutput, HAL_GetAccumulatorValue, HAL_InitAccumulator, HAL_ResetAccumulator, HAL_SetAccumulatorCenter, HAL_SetAccumulatorDeadband};
 
 use crate::{analog_input::AnalogInput, error::HALResult, hal_call, Handle};
 
@@ -54,5 +54,9 @@ impl<'a> AnalogAccumulator<'a> {
         let mut count= 0i64;
         hal_call!(HAL_GetAccumulatorOutput(self.0.raw_handle(), &mut value, &mut count))?;
         Ok((value, count))
+    }
+
+    pub unsafe fn raw_handle(&self) -> HAL_AnalogInputHandle {
+        self.0.raw_handle()
     }
 }

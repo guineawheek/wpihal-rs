@@ -105,6 +105,10 @@ impl Counter {
         hal_call!(HAL_SetCounterReverseDirection(self.handle, reverse_direction as i32))
     }
 
+    pub unsafe fn raw_handle(&self) -> HAL_CounterHandle {
+        self.handle
+    }
+
 }
 
 impl Drop for Counter {
