@@ -38,6 +38,7 @@ pub fn get_current_thread_priority() -> HALResult<ThreadPriority> {
 
 /// Sets thread priority.
 /// No-op on windows.
+#[cfg(unix)]
 pub fn set_thread_priority<T>(handle: &JoinHandle<T>, priority: ThreadPriority) -> HALResult<bool> {
     let pthread_t = handle.as_pthread_t() as NativeThreadHandle;
     Ok(hal_call!(HAL_SetThreadPriority(pthread_t, priority.real_time as i32, priority.priority))? != 0)
