@@ -4,7 +4,7 @@ members = [
     "wpilib-nativeutils-tester", 
     "wpihal-sys" 
 ]
-package.version = "2025.1.1-beta-3"
+package.version = "2025.1.1"
 package.license = "MIT OR Apache-2.0"
 package.authors = ["guineawheek <guineawheek@gmail.com>"]
 package.repository = "https://github.com/guineawheek/wpihal-rs"

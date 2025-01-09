@@ -1884,14 +1884,14 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "wpihal"
-version = "2025.1.1-beta-3"
+version = "2025.1.1"
 dependencies = [
  "wpihal-sys",
 ]
 
 [[package]]
 name = "wpihal-sys"
-version = "2025.1.1-beta-3"
+version = "2025.1.1"
 dependencies = [
  "bindgen",
  "regex",
@@ -1900,7 +1900,7 @@ dependencies = [
 
 [[package]]
 name = "wpilib-nativeutils"
-version = "2025.1.1-beta-3"
+version = "2025.1.1"
 dependencies = [
  "anyhow",
  "home",
@@ -1910,7 +1910,7 @@ dependencies = [
 
 [[package]]
 name = "wpilib-nativeutils-tester"
-version = "2025.1.1-beta-3"
+version = "2025.1.1"
 dependencies = [
  "regex",
  "wpilib-nativeutils",

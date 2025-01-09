@@ -39,7 +39,8 @@ pub fn send_error(code: i32, details: &CStr) -> HALResult<()> {
 // We don't bother with HAL_SetPrintErrorImpl because frankly it's kinda nuts.
 
 pub fn send_console_line(line: &str) -> HALResult<()> {
-    let v = unsafe { HAL_SendConsoleLine(CString::new(line).unwrap().as_ptr()) };
+    let c_line = CString::new(line).unwrap();
+    let v = unsafe { HAL_SendConsoleLine(c_line.as_ptr()) };
     if v != 0 { Err(HALError(v)) } else { Ok(()) }
 }
 
