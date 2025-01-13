@@ -1887,6 +1887,7 @@ name = "wpihal"
 version = "2025.1.1"
 dependencies = [
  "wpihal-sys",
+ "wpiutil",
 ]
 
 [[package]]
@@ -1912,6 +1913,22 @@ dependencies = [
 name = "wpilib-nativeutils-tester"
 version = "2025.1.1"
 dependencies = [
+ "regex",
+ "wpilib-nativeutils",
+]
+
+[[package]]
+name = "wpiutil"
+version = "2025.1.1"
+dependencies = [
+ "wpiutil-sys",
+]
+
+[[package]]
+name = "wpiutil-sys"
+version = "2025.1.1"
+dependencies = [
+ "bindgen",
  "regex",
  "wpilib-nativeutils",
 ]

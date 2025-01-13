@@ -2,7 +2,7 @@ use std::{ffi::{c_void, CStr}, time::Duration};
 
 use error::{HALError, HALResult};
 use wpihal_sys::{HAL_ExpandFPGATime, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount, HAL_GetFPGAButton, HAL_GetFPGATime, HAL_GetFPGAVersion, HAL_GetLastError, HAL_GetPort, HAL_GetPortWithModule, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber, HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond, HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize, HAL_PortHandle, HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter, HAL_SimPeriodicBefore, WPI_String};
-use wpistring::WPIString;
+use wpiutil::wpistring::WPIString;
 
 /// this is the higher level package
 /// i guess
@@ -87,7 +87,6 @@ halbase
 
 /// Error handling
 pub mod error;
-pub mod wpistring;
 
 /// Trait for a struct that wraps a handle value
 pub trait Handle<T> {
@@ -142,14 +141,18 @@ pub fn get_fpga_version() -> HALResult<i32> {
 
 pub fn get_serial_number() -> WPIString {
     let mut s: WPI_String = Default::default();
-    unsafe { HAL_GetSerialNumber(&mut s); }
-    WPIString::from_raw(s)
+    unsafe { 
+        HAL_GetSerialNumber(&mut s); 
+        WPIString::from_raw(wpiutil::wpistring::WPI_String { str_:  s.str_, len: s.len })
+    }
 }
 
 pub fn get_comments() -> WPIString {
     let mut s: WPI_String = Default::default();
-    unsafe { HAL_GetComments(&mut s); }
-    WPIString::from_raw(s)
+    unsafe {
+        HAL_GetComments(&mut s);
+        WPIString::from_raw(wpiutil::wpistring::WPI_String { str_:  s.str_, len: s.len })
+    }
 }
 
 pub fn get_team_number() -> i32 {

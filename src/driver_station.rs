@@ -1,6 +1,7 @@
 use wpihal_sys::{HAL_AllianceStationID, HAL_ControlWord, HAL_GetAllianceStation, HAL_GetControlWord, HAL_GetJoystickAxes, HAL_GetJoystickAxisType, HAL_GetJoystickDescriptor, HAL_GetJoystickIsXbox, HAL_GetJoystickName, HAL_GetJoystickPOVs, HAL_GetJoystickType, HAL_GetMatchInfo, HAL_GetMatchTime, HAL_GetOutputsEnabled, HAL_JoystickAxes, HAL_JoystickButtons, HAL_JoystickDescriptor, HAL_JoystickPOVs, HAL_MatchInfo, HAL_MatchType, HAL_ObserveUserProgramAutonomous, HAL_ObserveUserProgramDisabled, HAL_ObserveUserProgramStarting, HAL_ObserveUserProgramTeleop, HAL_ObserveUserProgramTest, HAL_RefreshDSData, HAL_SetJoystickOutputs, WPI_String};
+use wpiutil::wpistring::WPIString;
 
-use crate::{error::{HALError, HALResult}, hal_call, wpistring::WPIString};
+use crate::{error::{HALError, HALResult}, hal_call};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
@@ -100,8 +101,10 @@ pub fn get_joystick_type(joystick_num: i32) -> i32 {
 
 pub fn get_joystick_name(joystick_num: i32) -> WPIString {
     let mut name = WPI_String::default(); 
-    unsafe { HAL_GetJoystickName(&mut name, joystick_num); }
-    WPIString::from_raw(name)
+    unsafe {
+        HAL_GetJoystickName(&mut name, joystick_num); 
+        WPIString::from_raw(wpiutil::wpistring::WPI_String { str_:  name.str_, len: name.len })
+    }
 }
 
 pub fn get_joystick_axis_type(joystick_num: i32, axis: i32) -> i32 {

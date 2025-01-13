@@ -3,7 +3,7 @@ members = [
     "wpilib-nativeutils", 
     "wpilib-nativeutils-tester", 
     "wpihal-sys" 
-]
+, "wpiutil", "wpiutil-sys"]
 package.version = "2025.1.1"
 package.license = "MIT OR Apache-2.0"
 package.authors = ["guineawheek <guineawheek@gmail.com>"]
@@ -11,6 +11,7 @@ package.repository = "https://github.com/guineawheek/wpihal-rs"
 
 [package]
 name = "wpihal"
+description = "Rust bindings for the WPILib HAL"
 version.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -19,3 +20,4 @@ edition = "2021"
 
 [dependencies]
 wpihal-sys = { path = "./wpihal-sys" }
+wpiutil = { path = "./wpiutil"}

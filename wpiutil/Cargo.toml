@@ -1,0 +1,13 @@
+[package]
+name = "wpiutil"
+edition = "2021"
+description = "Rust bindings for WPIUtil"
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[features]
+
+[dependencies]
+wpiutil-sys = { path = "../wpiutil-sys"}

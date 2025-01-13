@@ -1,7 +1,8 @@
 use core::str;
 use std::{ffi::CStr, fmt::Display, mem::ManuallyDrop, ops::Deref};
 
-use wpihal_sys::{WPI_AllocateString, WPI_FreeString, WPI_String};
+use wpiutil_sys::{WPI_AllocateString, WPI_FreeString};
+pub use wpiutil_sys::WPI_String;
 
 /// A WPI_String that needs to be freed internally with [`WPI_FreeString`].
 /// This implements [`Drop`] so this is automatically handled for you.
@@ -66,6 +67,10 @@ impl WPIString {
                 core::slice::from_raw_parts(self.0.str_ as *const u8, self.0.len)
             )
         }
+    }
+
+    pub unsafe fn as_raw(&self) -> &wpiutil_sys::WPI_String {
+        &self.0
     }
 }
 
