@@ -26,7 +26,7 @@ jobs:
     container: ${{ matrix.container }}
     steps:
       - name: Install build dependencies
-        run: apt-get update && apt-get install libssl-dev
+        run: apt-get update && apt-get install -y build-essential libssl-dev libclang-dev
       - uses: actions/checkout@v4
         with:
           submodules: true
