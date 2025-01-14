@@ -84,7 +84,10 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
         const PLEASE_USE_UTF8: &str = "your file system path is not utf8 please fix your broken computer";
         clang_args.push(format!("--sysroot={}", sysroot.path().to_str().expect(PLEASE_USE_UTF8)));
         clang_args.push(format!("-I{}", sysroot.cpp_include().expect("can't find c++ headers in the sysroot").to_str().expect(PLEASE_USE_UTF8)));
-        clang_args.push(format!("-I{}", sysroot.cpp_bits_include().expect("can't find c++ headers in the sysroot").to_str().expect(PLEASE_USE_UTF8)));
+        if let Some(bits_headers) = sysroot.cpp_bits_include() {
+            // only the rio target has a separate bits header path for some reason
+            clang_args.push(format!("-I{}", bits_headers.to_str().expect(PLEASE_USE_UTF8)));
+        }
     }
 
 
