@@ -29,13 +29,13 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      - name: Install the rust target toolchain
-        run: |
-          rustup target add ${{ matrix.target }}
       - name: Fetch all history and metadata
         run: |
           git config --global --add safe.directory /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install rust target toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
       - name: Attempt to build library
         run: cargo build --target=${{ matrix.target }}
 
