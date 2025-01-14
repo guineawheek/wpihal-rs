@@ -39,7 +39,9 @@ Actual achievements of these aims is not certain and there are almost certainly 
 * Vague sense of maintaining aliasing xor mutability
  * Lifetime abuse to ensure that super-peripheral handles don't get `Drop`ed before their child peripherals do (e.g. DIOs don't get dropped before LED handles)
 * Slightly better user experience than just using raw bindgen vomit
+* Deals with linking against WPILib for you on all relevant platforms
 * Terrible build times (already achieved)
+ * to be fair, it's for similar reasons as gradle as it's bottlenecked on unzipping artifacts
 
 ## Things that could use some work
 * Testing on real hardware

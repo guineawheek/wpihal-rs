@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 use std::{collections::BTreeMap, path::PathBuf};
 
-use wpilib_nativeutils::{Artifact, ArtifactType, ReleaseTrain};
+use wpilib_nativeutils::{Artifact, ArtifactType, Platform, ReleaseTrain};
 
 fn main() {
     let version = env!("CARGO_PKG_VERSION");
     let year = env!("CARGO_PKG_VERSION_MAJOR");
-    let target = "aarch64-apple-darwin";
+    //let target = "aarch64-apple-darwin";
+    let platform = Platform::OsxUniversal;
     let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release);
     let wpilib_maven = wpilib_nativeutils::get_wpilib_maven(year);
     let remote_maven = wpilib_nativeutils::get_remote_maven(ReleaseTrain::Release);
@@ -17,14 +18,14 @@ fn main() {
     let buildlibs = out_path.join("buildlibs");
     std::fs::create_dir_all(&buildlibs).unwrap();
 
-    wpilib_nativeutils::download_artifact_zip_to_dir(target, &buildlibs, &repos, &Artifact {
+    wpilib_nativeutils::download_artifact_zip_to_dir(platform, &buildlibs, &repos, &Artifact {
         artifact_type: ArtifactType::Headers,
         group_id: "edu.wpi.first.hal",
         artifact_id: "hal-cpp",
         version,
     }).unwrap();
 
-    wpilib_nativeutils::download_artifact_zip_to_dir(target, &buildlibs, &repos, &Artifact {
+    wpilib_nativeutils::download_artifact_zip_to_dir(platform, &buildlibs, &repos, &Artifact {
         artifact_type: ArtifactType::Shared,
         group_id: "edu.wpi.first.hal",
         artifact_id: "hal-cpp",

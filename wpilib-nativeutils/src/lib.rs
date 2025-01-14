@@ -372,7 +372,10 @@ impl Sysroot {
     }
 
     pub fn cpp_bits_include(&self) -> Option<PathBuf> {
-        Some(self.cpp_include()?.join(&self.target))
+        let path = self.cpp_include()?.join(&self.target);
+        if path.exists() {
+            Some(path)
+        } else { None }
     }
 
 }
