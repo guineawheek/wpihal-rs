@@ -320,10 +320,10 @@ pub fn locate_sysroot(target: &str, year: &str) -> anyhow::Result<Option<Sysroot
     Ok(match platform {
         Platform::LinuxAthena => {
             // first check the local location first and then try everything else
-            let user_sysroot = get_wpilib_root(year).join("roborio").join("arm-nilrt-linux-gnueabi").join("sysroot");
-            user_sysroot.try_exists().ok().map(|_| Sysroot::new(&user_sysroot, "arm-nilrt-linux-gnueabi")).or_else(|| {
-                const ATHENA_SYSROOT: &str = "/usr/local/arm-nilrt-linux-gnueabi/sysroot";
-                Path::new(ATHENA_SYSROOT).try_exists().ok().map(|_| Sysroot::new(Path::new(ATHENA_SYSROOT), "arm-nilrt-linux-gnueabi"))
+            const ATHENA_SYSROOT: &str = "/usr/local/arm-nilrt-linux-gnueabi/sysroot";
+            Path::new(ATHENA_SYSROOT).try_exists().ok().map(|_| Sysroot::new(Path::new(ATHENA_SYSROOT), "arm-nilrt-linux-gnueabi")).or_else(|| {
+                let user_sysroot = get_wpilib_root(year).join("roborio").join("arm-nilrt-linux-gnueabi").join("sysroot");
+                user_sysroot.try_exists().ok().map(|_| Sysroot::new(&user_sysroot, "arm-nilrt-linux-gnueabi"))
             })
         }
         Platform::LinuxArm32 => {
