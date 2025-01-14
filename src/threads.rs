@@ -3,6 +3,7 @@ use std::thread::JoinHandle;
 #[cfg(unix)]
 use std::os::unix::thread::JoinHandleExt;
 
+#[allow(unused)]
 use wpihal_sys::{HAL_GetCurrentThreadPriority, HAL_GetThreadPriority, HAL_SetCurrentThreadPriority, HAL_SetThreadPriority, NativeThreadHandle};
 
 use crate::error::HALResult;
