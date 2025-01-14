@@ -1,4 +1,4 @@
-use std::ffi::{c_void, CStr};
+use std::ffi::{c_char, c_void, CStr};
 
 use wpihal_sys::{HAL_LoadExtensions, HAL_LoadOneExtension, HAL_OnShutdown, HAL_RegisterExtension, HAL_RegisterExtensionListener, HAL_SetShowExtensionsNotFoundMessages};
 
@@ -28,7 +28,7 @@ pub fn register_extension_listener(f: fn(&CStr, *mut c_void)) {
 
 
 #[allow(non_snake_case)]
-unsafe extern "C" fn HAL_rust_wpihal_extension_callback_wrapper(f: *mut c_void, name: *const i8, data: *mut c_void) {
+unsafe extern "C" fn HAL_rust_wpihal_extension_callback_wrapper(f: *mut c_void, name: *const c_char, data: *mut c_void) {
     unsafe {
         let f: fn(&CStr, *mut c_void) = core::mem::transmute(f);
         f(CStr::from_ptr(name), data);

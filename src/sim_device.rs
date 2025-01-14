@@ -1,4 +1,4 @@
-use std::ffi::CStr;
+use std::ffi::{c_char, CStr};
 
 use wpihal_sys::{HAL_CreateSimDevice, HAL_CreateSimValue, HAL_CreateSimValueEnum, HAL_CreateSimValueEnumDouble, HAL_FreeSimDevice, HAL_GetSimDeviceName, HAL_GetSimValue, HAL_SetSimValue, HAL_SimDeviceHandle, HAL_SimValueHandle, HAL_Value};
 
@@ -53,7 +53,7 @@ impl SimDevice {
                 name.as_ptr(),
                 direction as i32,
                 options.len() as i32,
-                options.as_ptr() as *mut *const i8,
+                options.as_ptr() as *mut *const c_char,
                 initial_index as i32
             ) {
                 0 => None,
@@ -69,7 +69,7 @@ impl SimDevice {
                 name.as_ptr(),
                 direction as i32,
                 options.len() as i32,
-                options.as_ptr() as *mut *const i8,
+                options.as_ptr() as *mut *const c_char,
                 option_values.as_ptr(),
                 initial_index as i32
             ) {

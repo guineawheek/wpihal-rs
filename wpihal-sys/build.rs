@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use std::{collections::BTreeMap, path::{Path, PathBuf}, sync::LazyLock};
+use std::{collections::BTreeMap, fmt::format, path::{Path, PathBuf}, sync::LazyLock};
 
 use bindgen::callbacks::ParseCallbacks;
 use wpilib_nativeutils::{Artifact, ArtifactType, MavenRepo, ReleaseTrain};
@@ -82,29 +82,37 @@ fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
 }
 
 fn generate_bindings_for_header(builder: bindgen::Builder, header: &str, regex: &str, output: &str) {
-  // Some config copied from first-rust-competition https://github.com/first-rust-competition/first-rust-competition/blob/master/hal-gen/src/main.rs
-  //const SYMBOL_REGEX: &str = r"(HAL_|HALSIM_)\w+";
-  let bindings = builder
-    .header(header)
-    .derive_default(true)
-    .clang_arg(format!("-I{}", OUT_DIR.join("buildlibs/headers").as_os_str().to_str().unwrap()))
-    .allowlist_type(regex)
-    .allowlist_function(regex)
-    .allowlist_var(regex)
-    .default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: false })
-    .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-    .parse_callbacks(Box::new(WPIHalCallbacks{}))
-    .clang_args(&[
-      format!("--target={}", *TARGET),    // See: https://github.com/rust-lang/rust-bindgen/issues/1760
-    ])
-    .clang_arg("-xc++")
-    .clang_arg("-std=c++20")
-    .generate()
-    .expect("Unable to generate bindings");
+    // Some config copied from first-rust-competition https://github.com/first-rust-competition/first-rust-competition/blob/master/hal-gen/src/main.rs
+    //const SYMBOL_REGEX: &str = r"(HAL_|HALSIM_)\w+";
+    let mut clang_args = vec![
+        format!("--target={}", *TARGET),    // See: https://github.com/rust-lang/rust-bindgen/issues/1760
+        "-xc++".to_string(),
+        "-std=c++20".to_string()
+    ];
+    if let Some(sysroot) = wpilib_nativeutils::locate_sysroot(TARGET.as_str(), YEAR.as_str()).unwrap() {
+        const PLEASE_USE_UTF8: &str = "your file system path is not utf8 please fix your broken computer";
+        clang_args.push(format!("--sysroot={}", sysroot.path().to_str().expect(PLEASE_USE_UTF8)));
+        clang_args.push(format!("-I{}", sysroot.cpp_include().expect("can't find c++ headers in the sysroot").to_str().expect(PLEASE_USE_UTF8)));
+        clang_args.push(format!("-I{}", sysroot.cpp_bits_include().expect("can't find c++ headers in the sysroot").to_str().expect(PLEASE_USE_UTF8)));
+    }
 
-  bindings
-    .write_to_file(OUT_DIR.join(output))
-    .expect("Couldn't write bindings!");
+    let bindings = builder
+      .header(header)
+      .derive_default(true)
+      .clang_arg(format!("-I{}", OUT_DIR.join("buildlibs/headers").as_os_str().to_str().unwrap()))
+      .allowlist_type(regex)
+      .allowlist_function(regex)
+      .allowlist_var(regex)
+      .default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: false })
+      .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+      .parse_callbacks(Box::new(WPIHalCallbacks{}))
+      .clang_args(&clang_args)
+      .generate()
+      .expect("Unable to generate bindings");
+
+    bindings
+      .write_to_file(OUT_DIR.join(output))
+      .expect("Couldn't write bindings!");
 }
 
 #[derive(Debug)]

@@ -48,7 +48,7 @@ pub fn send_console_line(line: &str) -> HALResult<()> {
 /// These are nullable.
 /// 
 /// These are used throughout the HAL to provide helpful messages on double allocation.
-pub fn allocation_location_ptr(allocation_location: Option<&CStr>) -> *const i8 {
+pub fn allocation_location_ptr(allocation_location: Option<&CStr>) -> *const std::ffi::c_char {
     match allocation_location {
         Some(s) => s.as_ptr(),
         None => core::ptr::null()

@@ -95,11 +95,11 @@ impl SerialPort {
     }
 
     pub fn read(&self, buffer: &mut [u8]) -> HALResult<usize> {
-        Ok(hal_call!(HAL_ReadSerial(self.0, buffer.as_mut_ptr() as *mut i8, buffer.len() as i32))? as usize)
+        Ok(hal_call!(HAL_ReadSerial(self.0, buffer.as_mut_ptr() as *mut c_char, buffer.len() as i32))? as usize)
     }
 
     pub fn write(&self, buffer: &[u8]) -> HALResult<usize> {
-        Ok(hal_call!(HAL_WriteSerial(self.0, buffer.as_ptr() as *mut i8, buffer.len() as i32))? as usize)
+        Ok(hal_call!(HAL_WriteSerial(self.0, buffer.as_ptr() as *mut c_char, buffer.len() as i32))? as usize)
     }
 
     pub fn flush(&self) -> HALResult<()> {

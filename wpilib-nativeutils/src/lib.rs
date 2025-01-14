@@ -181,15 +181,28 @@ pub fn get_remote_maven(release_train: ReleaseTrain) -> MavenRepo {
     }
 }
 
-pub fn get_wpilib_maven(year: &str) -> MavenRepo {
+pub fn get_wpilib_root(year: &str) -> PathBuf {
     #[cfg(target_os = "windows")]
-    return MavenRepo(format!("file:/C:/Users/Public/wpilib/{year}/maven"));
-
+    {
+        let public_folder = std::env::var_os("PUBLIC").unwrap_or(std::ffi::OsString::from("C:\\Users\\Public"));
+        Path::new(&public_folder).join("wpilib").join(year)
+    }
     #[cfg(not(target_os = "windows"))]
     {
-        let user_home = home::home_dir().unwrap_or_default().to_string_lossy().to_string();
-        MavenRepo(format!("file:/{user_home}/wpilib/{year}/maven"))
+        let containing_dir = home::home_dir().unwrap_or_default();
+        containing_dir.join("wpilib").join(year)
     }
+
+}
+
+pub fn get_wpilib_maven(year: &str) -> MavenRepo {
+    let wpilib_maven_root = get_wpilib_root(year).join("maven");
+    #[cfg(target_os = "windows")]
+    let wpilib_root_string = wpilib_maven_root.to_string_lossy().replace("\\", "/");
+    #[cfg(not(target_os = "windows"))]
+    let wpilib_root_string = wpilib_maven_root.to_string_lossy().to_string();
+
+    MavenRepo(format!("file:/{wpilib_root_string}"))
 }
 
 /*
@@ -260,3 +273,85 @@ pub fn rustc_debug_switch(libs: &[&str], debug: bool) {
         }
     }
 }
+
+pub struct Sysroot {
+    path: PathBuf,
+    target: String,
+}
+impl Sysroot {
+    pub fn new(path: &Path, target: &str) -> Self {
+        Self {
+            path: path.into(),
+            target: target.into()
+        }
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn cpp_include(&self) -> Option<PathBuf> {
+        let cpp_base = self.path.join("usr").join("include").join("c++");
+        latest_gcc_version(&cpp_base)
+    }
+
+    pub fn cpp_bits_include(&self) -> Option<PathBuf> {
+        Some(self.cpp_include()?.join(&self.target))
+    }
+
+}
+
+/// Locates ths sysroot and relevant directories to be included in order for C++ bindgen to work
+pub fn locate_sysroot(target: &str, year: &str) -> anyhow::Result<Option<Sysroot>> {
+    let Some(platform) = Platform::from_rust_target(target) else { return Err(NativeUtilsError::InvalidPlatform.into()) };
+    // Locates the sysroot.
+    /*
+    Sysroots are located at:
+      roborio:
+        /usr/local/arm-nilrt-linux-gnueabi/sysroot
+        ~/wpilib/{YEAR}/roborio/arm-nilrt-linux-gnueabi/sysroot
+      aarch64:
+        /usr/local/aarch64-linux-gnu/sysroot
+      armhf:
+        /usr/local/arm-linux-gnueabihf/sysroot
+      
+      Everything else shouldn't need one because it's a native build.
+     */
+    Ok(match platform {
+        Platform::LinuxAthena => {
+            // first check the local location first and then try everything else
+            let user_sysroot = get_wpilib_root(year).join("roborio").join("arm-nilrt-linux-gnueabi").join("sysroot");
+            user_sysroot.try_exists().ok().map(|_| Sysroot::new(&user_sysroot, "arm-nilrt-linux-gnueabi")).or_else(|| {
+                const ATHENA_SYSROOT: &str = "/usr/local/arm-nilrt-linux-gnuabi/sysroot";
+                Path::new(ATHENA_SYSROOT).try_exists().ok().map(|_| Sysroot::new(Path::new(ATHENA_SYSROOT), "arm-nilrt-linux-gnueabi"))
+            })
+        }
+        Platform::LinuxArm32 => {
+            const ARM32_SYSROOT: &str = "/usr/local/arm-linux-gnueabihf/sysroot";
+            Path::new(ARM32_SYSROOT).try_exists().ok().map(|_| Sysroot::new(Path::new(ARM32_SYSROOT), "arm-linux-gnueabihf"))
+        }
+        Platform::LinuxArm64 => {
+            const ARM64_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
+            Path::new(ARM64_SYSROOT).try_exists().ok().map(|_| Sysroot::new(Path::new(ARM64_SYSROOT), "aarch64-linux-gnu"))
+        }
+        _ => None
+    })
+}
+
+fn latest_gcc_version(p: &Path) -> Option<PathBuf> {
+    Some(p.read_dir().ok()?.max_by(|a, b| {
+        match (a, b) {
+            (Ok(v1), Ok(v2)) => {
+                let Ok(v1_str) = v1.file_name().into_string() else { return std::cmp::Ordering::Less };
+                let Ok(v1_num) = v1_str.parse::<i64>() else { return std::cmp::Ordering::Less };
+                let Ok(v2_str) = v2.file_name().into_string() else { return std::cmp::Ordering::Greater };
+                let Ok(v2_num) = v2_str.parse::<i64>() else { return std::cmp::Ordering::Greater };
+                v1_num.cmp(&v2_num)
+            }
+            (Ok(_), Err(_)) => std::cmp::Ordering::Greater,
+            (Err(_), Ok(_)) => std::cmp::Ordering::Less,
+            (Err(_), Err(_)) => std::cmp::Ordering::Equal,
+        }
+    })?.ok()?.path())
+}
+

@@ -71,10 +71,28 @@ fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
 fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
   // Some config copied from first-rust-competition https://github.com/first-rust-competition/first-rust-competition/blob/master/hal-gen/src/main.rs
   //const SYMBOL_REGEX: &str = r"(HAL_|HALSIM_)\w+";
+
+    let mut clang_args = vec![
+        format!("--target={}", *TARGET),    // See: https://github.com/rust-lang/rust-bindgen/issues/1760
+        "-xc++".to_string(),
+        "-std=c++20".to_string(),
+        "-v".to_string()
+    ];
+
+
+    if let Some(sysroot) = wpilib_nativeutils::locate_sysroot(TARGET.as_str(), YEAR.as_str()).unwrap() {
+        const PLEASE_USE_UTF8: &str = "your file system path is not utf8 please fix your broken computer";
+        clang_args.push(format!("--sysroot={}", sysroot.path().to_str().expect(PLEASE_USE_UTF8)));
+        clang_args.push(format!("-I{}", sysroot.cpp_include().expect("can't find c++ headers in the sysroot").to_str().expect(PLEASE_USE_UTF8)));
+        clang_args.push(format!("-I{}", sysroot.cpp_bits_include().expect("can't find c++ headers in the sysroot").to_str().expect(PLEASE_USE_UTF8)));
+    }
+
+
   let bindings = builder
     .header("UtilInclude.h")
     .derive_default(true)
     .clang_arg(format!("-I{}", OUT_DIR.join("buildlibs/headers").as_os_str().to_str().unwrap()))
+    .clang_args(&clang_args)
     .allowlist_item(r"WPI_\w+")
     //.allowlist_type(regex)
     //.allowlist_function(regex)
@@ -82,11 +100,6 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
     .default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: false })
     .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
     .parse_callbacks(Box::new(WPIUtilCallbacks{}))
-    .clang_args(&[
-      format!("--target={}", *TARGET),    // See: https://github.com/rust-lang/rust-bindgen/issues/1760
-    ])
-    .clang_arg("-xc++")
-    .clang_arg("-std=c++20")
     .generate()
     .expect("Unable to generate bindings");
 
