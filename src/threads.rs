@@ -26,7 +26,7 @@ pub fn get_thread_priority<T>(handle: &JoinHandle<T>) -> HALResult<ThreadPriorit
     Ok(ThreadPriority { priority, real_time: is_real_time != 0 })
 }
 #[cfg(not(unix))]
-pub fn get_thread_priority<T>(handle: &JoinHandle<T>) -> HALResult<ThreadPriority> {
+pub fn get_thread_priority<T>(_handle: &JoinHandle<T>) -> HALResult<ThreadPriority> {
     Ok(ThreadPriority { priority: 0, real_time: false })
 }
 
