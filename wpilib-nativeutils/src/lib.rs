@@ -224,8 +224,8 @@ Files to extract:
 */
 
 
-pub fn download_artifact_zip_to_dir(target: &str, dir: &Path, repos: &[MavenRepo], artifact: &Artifact) -> anyhow::Result<()> {
-    let Some(platform) = Platform::from_rust_target(target) else { return Err(NativeUtilsError::InvalidPlatform.into()) };
+pub fn download_artifact_zip_to_dir(platform: Platform, dir: &Path, repos: &[MavenRepo], artifact: &Artifact) -> anyhow::Result<()> {
+    //let Some(platform) = Platform::from_rust_target(target) else { return Err(NativeUtilsError::InvalidPlatform.into()) };
     let dir = PathBuf::from(dir);
     let mut last_err: Option<anyhow::Error> = None;
     let mut artifact_data: Option<Vec<u8>> = None;
@@ -247,9 +247,49 @@ pub fn download_artifact_zip_to_dir(target: &str, dir: &Path, repos: &[MavenRepo
     Ok(())
 }
 
-pub fn lib_search_path(dir: &Path, target: &str, shared: bool) -> PathBuf {
-    let platform = Platform::from_rust_target(target).unwrap();
+pub fn download_native_library_artifacts(
+    repos: &[MavenRepo],
+    platform: Platform,
+    group_id: &str,
+    artifact_id: &str,
+    version: &str,
+    buildlibs: &Path, 
+) -> anyhow::Result<()> {
+    let cache_marker = buildlibs.join(format!(".nativeutils_downloaded_{group_id}.{artifact_id}-{version}"));
+    if cache_marker.exists() { return Ok(()); }
+
+    let headers_dir = buildlibs.join("headers");
+    std::fs::create_dir_all(&headers_dir)?;
+
+    download_artifact_zip_to_dir(platform, &headers_dir, repos, &Artifact {
+        artifact_type: ArtifactType::Headers,
+        group_id,
+        artifact_id,
+        version,
+    }).unwrap();
+
+    for (artifact_type, build_type) in [
+        (ArtifactType::Shared, "release"),
+        (ArtifactType::SharedDebug, "debug"),
+        (ArtifactType::Static, "release"),
+        (ArtifactType::StaticDebug, "debug"),
+    ] {
+        let output_dir = buildlibs.join(build_type);
+        std::fs::create_dir_all(&output_dir)?;
+        download_artifact_zip_to_dir(platform, &output_dir, repos, &Artifact {
+            artifact_type,
+            group_id,
+            artifact_id,
+            version,
+        })?;
+    }
+    Ok(())
+}
+
+pub fn lib_search_path(dir: &Path, platform: Platform, shared: bool, debug: bool) -> PathBuf {
     let mut path = PathBuf::from(dir);
+    path.push(if debug { "debug" } else { "release" });
+
     path.push(platform.operating_system());
     path.push(platform.architecture());
     if shared {
@@ -258,6 +298,10 @@ pub fn lib_search_path(dir: &Path, target: &str, shared: bool) -> PathBuf {
         path.push("static");
     }
     path
+}
+
+pub fn rustc_link_search(dir: &Path, platform: Platform, shared: bool, debug: bool) {
+    println!("cargo:rustc-link-search={}", stringify_path(&lib_search_path(dir, platform, shared, debug)))
 }
 
 pub fn header_search_path(dir: &Path) -> PathBuf {
@@ -273,6 +317,38 @@ pub fn rustc_debug_switch(libs: &[&str], debug: bool) {
         }
     }
 }
+
+
+pub fn stringify_path(path: &Path) -> String {
+    const PLEASE_USE_UTF8: &str = "your file system paths are not utf8 please build this in a utf8 pathed directory";
+    let canon = path.canonicalize().unwrap();
+    let s = canon.to_str().expect(PLEASE_USE_UTF8);
+    #[cfg(windows)]
+    {
+        // on windows, canonicalize() adds the _absolute_ absolute path with a \\?\ prefix, but this breaks downstream tooling.
+        // downside, of course, is the 255 character limit.
+        s.strip_prefix(r"\\?\").unwrap_or(s).to_string()
+    }
+    #[cfg(unix)]
+    {
+        s.to_string()
+    }
+}
+
+pub fn add_sysroot_to_clang_args(clang_args: &mut Vec<String>, platform: Platform, year: &str) -> anyhow::Result<()> {
+    if let Some(sysroot) = locate_sysroot(platform, year) {
+        eprintln!("Located sysroot at {:?}", sysroot.path());
+        eprintln!("Located sysroot c++ at {:?}", sysroot.cpp_include());
+        clang_args.push(format!("--sysroot={}", stringify_path(sysroot.path())));
+        clang_args.push(format!("-I{}", stringify_path(&sysroot.cpp_include().expect("can't find c++ headers in the sysroot"))));
+        if let Some(bits_headers) = sysroot.cpp_bits_include() {
+            // only the rio target has a separate bits header path for some reason
+            clang_args.push(format!("-I{}", stringify_path(&bits_headers)));
+        }
+    }
+    Ok(())
+}
+
 
 pub struct Sysroot {
     path: PathBuf,
@@ -302,8 +378,7 @@ impl Sysroot {
 }
 
 /// Locates ths sysroot and relevant directories to be included in order for C++ bindgen to work
-pub fn locate_sysroot(target: &str, year: &str) -> anyhow::Result<Option<Sysroot>> {
-    let Some(platform) = Platform::from_rust_target(target) else { return Err(NativeUtilsError::InvalidPlatform.into()) };
+pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
     // Locates the sysroot.
     /*
     Sysroots are located at:
@@ -317,7 +392,7 @@ pub fn locate_sysroot(target: &str, year: &str) -> anyhow::Result<Option<Sysroot
       
       Everything else shouldn't need one because it's a native build.
      */
-    Ok(match platform {
+    match platform {
         Platform::LinuxAthena => {
             // first check the local location first and then try everything else
             const ATHENA_SYSROOT: &str = "/usr/local/arm-nilrt-linux-gnueabi/sysroot";
@@ -343,7 +418,7 @@ pub fn locate_sysroot(target: &str, year: &str) -> anyhow::Result<Option<Sysroot
             } else { None }
         }
         _ => None
-    })
+    }
 }
 
 fn latest_gcc_version(p: &Path) -> Option<PathBuf> {

@@ -2,8 +2,11 @@
 members = [
     "wpilib-nativeutils", 
     "wpilib-nativeutils-tester", 
-    "wpihal-sys" 
-, "wpiutil", "wpiutil-sys"]
+    "wpihal-sys",
+    "wpiutil",
+    "wpiutil-sys",
+    "build-test"
+]
 package.version = "0.2025.1"
 package.license = "MIT OR Apache-2.0"
 package.authors = ["guineawheek <guineawheek@gmail.com>"]
