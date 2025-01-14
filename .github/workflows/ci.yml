@@ -1,0 +1,70 @@
+name: CI
+
+#on: [workflow_dispatch]
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build-docker:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - container: wpilib/roborio-cross-ubuntu:2025-22.04
+            artifact-name: Athena
+            target: "arm-unknown-linux-gnueabi"
+          - container: wpilib/raspbian-cross-ubuntu:bookworm-22.04
+            artifact-name: Arm32
+            target: "arm-unknown-linux-gnueabihf"
+          - container: wpilib/aarch64-cross-ubuntu:bookworm-22.04
+            artifact-name: Arm64
+            target: "aarch64-unknown-linux-gnu"
+          - container: wpilib/ubuntu-base:22.04
+            artifact-name: Linux
+            target: "x86_64-unknown-linux-gnu"
+    name: "Build - ${{ matrix.artifact-name }}"
+    runs-on: ubuntu-22.04
+    container: ${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Install the rust target toolchain
+        run: |
+          rustup target add ${{ matrix.target }}
+      - name: Fetch all history and metadata
+        run: |
+          git config --global --add safe.directory /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Attempt to build library
+        run: cargo build --target=${{ matrix.target }}
+
+  build-host:
+    env: 
+      MACOSX_DEPLOYMENT_TARGET: 13.3
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            artifact-name: WinX64
+            architecture: x64
+          - os: windows-2022
+            artifact-name: WinArm64
+            architecture: aarch64
+          - os: macos-14
+            artifact-name: macOS
+            architecture: aarch64
+          #- os: macos-14
+          #  artifact-name: macOS-arm64
+          #  build-options:
+    name: "Build - ${{ matrix.artifact-name }}"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Attempt to build library
+        run: cargo build
