@@ -283,6 +283,7 @@ pub fn download_native_library_artifacts(
             version,
         })?;
     }
+    std::fs::OpenOptions::new().create(true).write(true).open(cache_marker).ok();
     Ok(())
 }
 
