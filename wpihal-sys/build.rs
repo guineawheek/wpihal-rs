@@ -10,7 +10,7 @@ static YEAR: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSIO
 static TARGET: LazyLock<String> = LazyLock::new(|| std::env::var("TARGET").unwrap());
 const SHARED: bool = cfg!(feature = "shared");
 static DEBUG: LazyLock<bool> = LazyLock::new(|| std::env::var("PROFILE").unwrap() == "debug");
-static OUT_DIR: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from(std::env::var("OUT_DIR").unwrap()));
+static OUT_DIR: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from(std::env::var("OUT_DIR").unwrap()).canonicalize().unwrap());
 
 pub fn main() {
 
@@ -43,12 +43,6 @@ fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
     let cache_marker = buildlibs.join(format!(".nativeutils_downloaded_{group_id}.{artifact_id}-{}", VERSION.as_str()));
     if cache_marker.exists() { return; }
 
-    let (link_shared, link_static) = if *DEBUG { 
-        (ArtifactType::Shared, ArtifactType::Static)
-    } else {
-        (ArtifactType::SharedDebug, ArtifactType::StaticDebug)
-    };
-
     wpilib_nativeutils::download_artifact_zip_to_dir(&TARGET, &buildlibs.join("headers"), repos, &Artifact {
         artifact_type: ArtifactType::Headers,
         group_id,
@@ -56,19 +50,17 @@ fn download_artifacts(repos: &[MavenRepo], group_id: &str, artifact_id: &str) {
         version: &VERSION,
     }).unwrap();
 
-    wpilib_nativeutils::download_artifact_zip_to_dir(&TARGET, &buildlibs, repos, &Artifact {
-        artifact_type: link_shared,
-        group_id,
-        artifact_id,
-        version: &VERSION,
-    }).unwrap();
-
-    wpilib_nativeutils::download_artifact_zip_to_dir(&TARGET, &buildlibs, repos, &Artifact {
-        artifact_type: link_static,
-        group_id,
-        artifact_id,
-        version: &VERSION
-    }).unwrap();
+    // this is fine for wpilib which disambiguates the artifacts pretty well, but other maven libraries might not 
+    // like it if you stuff all their artifacts in the same place with the same names.
+    // ideally you want a separate folder for your debug and release artifacts
+    for artifact_type in [ArtifactType::Static, ArtifactType::StaticDebug, ArtifactType::Shared, ArtifactType::SharedDebug] {
+        wpilib_nativeutils::download_artifact_zip_to_dir(&TARGET, &buildlibs, repos, &Artifact {
+            artifact_type,
+            group_id,
+            artifact_id,
+            version: &VERSION,
+        }).unwrap();
+    }
 
     create_usage_reporting(
         &OUT_DIR.join("buildlibs/headers/hal/FRCUsageReporting.h"),

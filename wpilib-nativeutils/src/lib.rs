@@ -321,18 +321,26 @@ pub fn locate_sysroot(target: &str, year: &str) -> anyhow::Result<Option<Sysroot
         Platform::LinuxAthena => {
             // first check the local location first and then try everything else
             const ATHENA_SYSROOT: &str = "/usr/local/arm-nilrt-linux-gnueabi/sysroot";
-            Path::new(ATHENA_SYSROOT).try_exists().ok().map(|_| Sysroot::new(Path::new(ATHENA_SYSROOT), "arm-nilrt-linux-gnueabi")).or_else(|| {
+            if Path::new(ATHENA_SYSROOT).exists() {
+                Some(Sysroot::new(Path::new(ATHENA_SYSROOT), "arm-nilrt-linux-gnueabi"))
+            } else {
                 let user_sysroot = get_wpilib_root(year).join("roborio").join("arm-nilrt-linux-gnueabi").join("sysroot");
-                user_sysroot.try_exists().ok().map(|_| Sysroot::new(&user_sysroot, "arm-nilrt-linux-gnueabi"))
-            })
+                if user_sysroot.exists() {
+                    Some(Sysroot::new(&user_sysroot, "arm-nilrt-linux-gnueabi"))
+                } else { None }
+            }
         }
         Platform::LinuxArm32 => {
             const ARM32_SYSROOT: &str = "/usr/local/arm-linux-gnueabihf/sysroot";
-            Path::new(ARM32_SYSROOT).try_exists().ok().map(|_| Sysroot::new(Path::new(ARM32_SYSROOT), "arm-linux-gnueabihf"))
+            if Path::new(ARM32_SYSROOT).exists() {
+                Some(Sysroot::new(Path::new(ARM32_SYSROOT), "arm-linux-gnueabihf"))
+            } else { None }
         }
         Platform::LinuxArm64 => {
             const ARM64_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
-            Path::new(ARM64_SYSROOT).try_exists().ok().map(|_| Sysroot::new(Path::new(ARM64_SYSROOT), "aarch64-linux-gnu"))
+            if Path::new(ARM64_SYSROOT).exists() {
+                Some(Sysroot::new(Path::new(ARM64_SYSROOT), "aarch64-linux-gnu"))
+            } else { None }
         }
         _ => None
     })
