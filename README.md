@@ -10,7 +10,7 @@ As such, you can add `wpihal` as a git dependency to your project toml:
 
 ```toml
 [dependencies]
-wpihal = { git = "https://github.com/guineawheek/wpihal.git" }
+wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git" }
 ```
 
 ## Why just the HAL?
