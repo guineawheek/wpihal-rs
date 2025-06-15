@@ -1,9 +1,27 @@
 use std::ffi::CStr;
 
-use wpihal_sys::{HAL_CheckPowerDistributionChannel, HAL_CheckPowerDistributionModule, HAL_CleanPowerDistribution, HAL_ClearPowerDistributionStickyFaults, HAL_FreePowerDistributionStreamData, HAL_GetPowerDistributionAllChannelCurrents, HAL_GetPowerDistributionChannelCurrent, HAL_GetPowerDistributionFaults, HAL_GetPowerDistributionModuleNumber, HAL_GetPowerDistributionNumChannels, HAL_GetPowerDistributionStickyFaults, HAL_GetPowerDistributionStreamData, HAL_GetPowerDistributionSwitchableChannel, HAL_GetPowerDistributionTemperature, HAL_GetPowerDistributionTotalCurrent, HAL_GetPowerDistributionTotalEnergy, HAL_GetPowerDistributionTotalPower, HAL_GetPowerDistributionType, HAL_GetPowerDistributionVersion, HAL_GetPowerDistributionVoltage, HAL_InitializePowerDistribution, HAL_PowerDistributionChannelData, HAL_PowerDistributionFaults, HAL_PowerDistributionHandle, HAL_PowerDistributionStickyFaults, HAL_PowerDistributionType, HAL_PowerDistributionVersion, HAL_ResetPowerDistributionTotalEnergy, HAL_SetPowerDistributionSwitchableChannel, HAL_StartPowerDistributionStream, HAL_StopPowerDistributionStream};
+use wpihal_sys::{
+    HAL_CheckPowerDistributionChannel, HAL_CheckPowerDistributionModule,
+    HAL_CleanPowerDistribution, HAL_ClearPowerDistributionStickyFaults,
+    HAL_FreePowerDistributionStreamData, HAL_GetPowerDistributionAllChannelCurrents,
+    HAL_GetPowerDistributionChannelCurrent, HAL_GetPowerDistributionFaults,
+    HAL_GetPowerDistributionModuleNumber, HAL_GetPowerDistributionNumChannels,
+    HAL_GetPowerDistributionStickyFaults, HAL_GetPowerDistributionStreamData,
+    HAL_GetPowerDistributionSwitchableChannel, HAL_GetPowerDistributionTemperature,
+    HAL_GetPowerDistributionTotalCurrent, HAL_GetPowerDistributionTotalEnergy,
+    HAL_GetPowerDistributionTotalPower, HAL_GetPowerDistributionType,
+    HAL_GetPowerDistributionVersion, HAL_GetPowerDistributionVoltage,
+    HAL_InitializePowerDistribution, HAL_PowerDistributionChannelData, HAL_PowerDistributionFaults,
+    HAL_PowerDistributionHandle, HAL_PowerDistributionStickyFaults, HAL_PowerDistributionType,
+    HAL_PowerDistributionVersion, HAL_ResetPowerDistributionTotalEnergy,
+    HAL_SetPowerDistributionSwitchableChannel, HAL_StartPowerDistributionStream,
+    HAL_StopPowerDistributionStream,
+};
 
-use crate::{error::{allocation_location_ptr, HALResult}, hal_call};
-
+use crate::{
+    error::{HALResult, allocation_location_ptr},
+    hal_call,
+};
 
 pub type PowerDistributionType = HAL_PowerDistributionType;
 pub type PowerDistributionVersion = HAL_PowerDistributionVersion;
@@ -15,7 +33,11 @@ pub type PowerDistributionChannelData = HAL_PowerDistributionChannelData;
 pub struct PowerDistribution(HAL_PowerDistributionHandle);
 
 impl PowerDistribution {
-    pub fn initialize(module_number: i32, pd_type: PowerDistributionType, allocation_location: Option<&CStr>) -> HALResult<PowerDistribution> {
+    pub fn initialize(
+        module_number: i32,
+        pd_type: PowerDistributionType,
+        allocation_location: Option<&CStr>,
+    ) -> HALResult<PowerDistribution> {
         Ok(Self(hal_call!(HAL_InitializePowerDistribution(
             module_number,
             pd_type,
@@ -56,7 +78,11 @@ impl PowerDistribution {
     }
 
     pub fn get_all_channel_currents(&self, currents: &mut [f64]) -> HALResult<()> {
-        hal_call!(HAL_GetPowerDistributionAllChannelCurrents(self.0, currents.as_mut_ptr(), currents.len() as i32))
+        hal_call!(HAL_GetPowerDistributionAllChannelCurrents(
+            self.0,
+            currents.as_mut_ptr(),
+            currents.len() as i32
+        ))
     }
 
     pub fn get_total_current(&self) -> HALResult<f64> {
@@ -80,7 +106,10 @@ impl PowerDistribution {
     }
 
     pub fn set_switchable_channel(&mut self, enabled: bool) -> HALResult<()> {
-        hal_call!(HAL_SetPowerDistributionSwitchableChannel(self.0, enabled as i32))
+        hal_call!(HAL_SetPowerDistributionSwitchableChannel(
+            self.0,
+            enabled as i32
+        ))
     }
 
     pub fn get_switchable_channel(&self) -> HALResult<bool> {
@@ -118,35 +147,34 @@ impl PowerDistribution {
         let ptr = hal_call!(HAL_GetPowerDistributionStreamData(self.0, &mut count))?;
         Ok(PowerDistributionStreamData {
             ptr,
-            len: count as usize
+            len: count as usize,
         })
-
     }
-
-
 }
 
 impl Drop for PowerDistribution {
     fn drop(&mut self) {
-        unsafe { HAL_CleanPowerDistribution(self.0); }
+        unsafe {
+            HAL_CleanPowerDistribution(self.0);
+        }
     }
 }
 
 pub struct PowerDistributionStreamData {
     ptr: *mut HAL_PowerDistributionChannelData,
-    len: usize
+    len: usize,
 }
 
 impl PowerDistributionStreamData {
     pub fn as_slice(&self) -> &[PowerDistributionChannelData] {
-        unsafe {
-            core::slice::from_raw_parts(self.ptr as *const _, self.len)
-        }
+        unsafe { core::slice::from_raw_parts(self.ptr as *const _, self.len) }
     }
 }
 
 impl Drop for PowerDistributionStreamData {
     fn drop(&mut self) {
-        unsafe { HAL_FreePowerDistributionStreamData(self.ptr, self.len as i32); }
+        unsafe {
+            HAL_FreePowerDistributionStreamData(self.ptr, self.len as i32);
+        }
     }
 }

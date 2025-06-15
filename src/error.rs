@@ -1,39 +1,22 @@
 // Parts borrowed from https://github.com/first-rust-competition/first-rust-competition/blob/master/wpilib-sys/src/hal_call.rs
 
 use core::fmt;
-use std::{borrow::Cow, ffi::{CStr, CString}};
+use std::{
+    borrow::Cow,
+    ffi::{CStr, CString},
+};
 
 use wpihal_sys::{HAL_GetErrorMessage, HAL_SendConsoleLine, HAL_SendError};
 
 /// Sends a warning to the driver station.
 pub fn send_warning(code: i32, details: &CStr) -> HALResult<()> {
-    let v = unsafe {
-        HAL_SendError(
-            0,
-            code,
-            0,
-            details.as_ptr(),
-            c"".as_ptr(),
-            c"".as_ptr(),
-            1
-        )
-    };
+    let v = unsafe { HAL_SendError(0, code, 0, details.as_ptr(), c"".as_ptr(), c"".as_ptr(), 1) };
     if v != 0 { Err(HALError(v)) } else { Ok(()) }
 }
 
 /// Sends an error to the driver station.
 pub fn send_error(code: i32, details: &CStr) -> HALResult<()> {
-    let v = unsafe {
-        HAL_SendError(
-            1,
-            code,
-            0,
-            details.as_ptr(),
-            c"".as_ptr(),
-            c"".as_ptr(),
-            1
-        )
-    };
+    let v = unsafe { HAL_SendError(1, code, 0, details.as_ptr(), c"".as_ptr(), c"".as_ptr(), 1) };
     if v != 0 { Err(HALError(v)) } else { Ok(()) }
 }
 // We don't bother with HAL_SetPrintErrorImpl because frankly it's kinda nuts.
@@ -46,12 +29,12 @@ pub fn send_console_line(line: &str) -> HALResult<()> {
 
 /// Converts an Option<&CStr> into an allocation location pointer.
 /// These are nullable.
-/// 
+///
 /// These are used throughout the HAL to provide helpful messages on double allocation.
 pub fn allocation_location_ptr(allocation_location: Option<&CStr>) -> *const std::ffi::c_char {
     match allocation_location {
         Some(s) => s.as_ptr(),
-        None => core::ptr::null()
+        None => core::ptr::null(),
     }
 }
 
@@ -69,7 +52,6 @@ impl HALError {
         let c_str = unsafe { CStr::from_ptr(const_char_ptr) };
         c_str.to_string_lossy()
     }
-
 
     /// Sends this error to the driver station.
     /// The location and callStack fields are set to be blank.

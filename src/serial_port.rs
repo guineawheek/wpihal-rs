@@ -1,4 +1,3 @@
-
 /*
 
 this doesn't use VISA to query the usb serial ports
@@ -6,9 +5,16 @@ but honestly if you're using rust, just use a 3rd party crate
 
 */
 
-use std::ffi::{c_char, CStr};
+use std::ffi::{CStr, c_char};
 
-use wpihal_sys::{HAL_CloseSerial, HAL_DisableSerialTermination, HAL_EnableSerialTermination, HAL_FlushSerial, HAL_GetSerialBytesReceived, HAL_GetSerialFD, HAL_InitializeSerialPort, HAL_InitializeSerialPortDirect, HAL_ReadSerial, HAL_SerialPort, HAL_SerialPortHandle, HAL_SetSerialBaudRate, HAL_SetSerialDataBits, HAL_SetSerialFlowControl, HAL_SetSerialParity, HAL_SetSerialReadBufferSize, HAL_SetSerialStopBits, HAL_SetSerialTimeout, HAL_SetSerialWriteBufferSize, HAL_SetSerialWriteMode, HAL_WriteSerial};
+use wpihal_sys::{
+    HAL_CloseSerial, HAL_DisableSerialTermination, HAL_EnableSerialTermination, HAL_FlushSerial,
+    HAL_GetSerialBytesReceived, HAL_GetSerialFD, HAL_InitializeSerialPort,
+    HAL_InitializeSerialPortDirect, HAL_ReadSerial, HAL_SerialPort, HAL_SerialPortHandle,
+    HAL_SetSerialBaudRate, HAL_SetSerialDataBits, HAL_SetSerialFlowControl, HAL_SetSerialParity,
+    HAL_SetSerialReadBufferSize, HAL_SetSerialStopBits, HAL_SetSerialTimeout,
+    HAL_SetSerialWriteBufferSize, HAL_SetSerialWriteMode, HAL_WriteSerial,
+};
 
 use crate::{error::HALResult, hal_call};
 
@@ -39,7 +45,10 @@ impl SerialPort {
     }
 
     pub fn initialize_direct(port: SerialPortIndex, name: &CStr) -> HALResult<Self> {
-        Ok(Self(hal_call!(HAL_InitializeSerialPortDirect(port, name.as_ptr()))?))
+        Ok(Self(hal_call!(HAL_InitializeSerialPortDirect(
+            port,
+            name.as_ptr()
+        ))?))
     }
 
     pub fn get_fd(&self) -> HALResult<std::os::raw::c_int> {
@@ -95,11 +104,19 @@ impl SerialPort {
     }
 
     pub fn read(&self, buffer: &mut [u8]) -> HALResult<usize> {
-        Ok(hal_call!(HAL_ReadSerial(self.0, buffer.as_mut_ptr() as *mut c_char, buffer.len() as i32))? as usize)
+        Ok(hal_call!(HAL_ReadSerial(
+            self.0,
+            buffer.as_mut_ptr() as *mut c_char,
+            buffer.len() as i32
+        ))? as usize)
     }
 
     pub fn write(&self, buffer: &[u8]) -> HALResult<usize> {
-        Ok(hal_call!(HAL_WriteSerial(self.0, buffer.as_ptr() as *mut c_char, buffer.len() as i32))? as usize)
+        Ok(hal_call!(HAL_WriteSerial(
+            self.0,
+            buffer.as_ptr() as *mut c_char,
+            buffer.len() as i32
+        ))? as usize)
     }
 
     pub fn flush(&self) -> HALResult<()> {
@@ -109,6 +126,8 @@ impl SerialPort {
 
 impl Drop for SerialPort {
     fn drop(&mut self) {
-        unsafe { HAL_CloseSerial(self.0); }
+        unsafe {
+            HAL_CloseSerial(self.0);
+        }
     }
 }

@@ -1,14 +1,31 @@
 use std::ffi::CStr;
 
-use wpihal_sys::{HAL_CTREPCMHandle, HAL_CheckCTREPCMSolenoidChannel, HAL_ClearAllCTREPCMStickyFaults, HAL_FireCTREPCMOneShot, HAL_FreeCTREPCM, HAL_GetCTREPCMClosedLoopControl, HAL_GetCTREPCMCompressor, HAL_GetCTREPCMCompressorCurrent, HAL_GetCTREPCMCompressorCurrentTooHighFault, HAL_GetCTREPCMCompressorCurrentTooHighStickyFault, HAL_GetCTREPCMCompressorNotConnectedFault, HAL_GetCTREPCMCompressorNotConnectedStickyFault, HAL_GetCTREPCMCompressorShortedFault, HAL_GetCTREPCMCompressorShortedStickyFault, HAL_GetCTREPCMPressureSwitch, HAL_GetCTREPCMSolenoidDisabledList, HAL_GetCTREPCMSolenoidVoltageFault, HAL_GetCTREPCMSolenoidVoltageStickyFault, HAL_GetCTREPCMSolenoids, HAL_InitializeCTREPCM, HAL_SetCTREPCMClosedLoopControl, HAL_SetCTREPCMOneShotDuration, HAL_SetCTREPCMSolenoids};
+use wpihal_sys::{
+    HAL_CTREPCMHandle, HAL_CheckCTREPCMSolenoidChannel, HAL_ClearAllCTREPCMStickyFaults,
+    HAL_FireCTREPCMOneShot, HAL_FreeCTREPCM, HAL_GetCTREPCMClosedLoopControl,
+    HAL_GetCTREPCMCompressor, HAL_GetCTREPCMCompressorCurrent,
+    HAL_GetCTREPCMCompressorCurrentTooHighFault, HAL_GetCTREPCMCompressorCurrentTooHighStickyFault,
+    HAL_GetCTREPCMCompressorNotConnectedFault, HAL_GetCTREPCMCompressorNotConnectedStickyFault,
+    HAL_GetCTREPCMCompressorShortedFault, HAL_GetCTREPCMCompressorShortedStickyFault,
+    HAL_GetCTREPCMPressureSwitch, HAL_GetCTREPCMSolenoidDisabledList,
+    HAL_GetCTREPCMSolenoidVoltageFault, HAL_GetCTREPCMSolenoidVoltageStickyFault,
+    HAL_GetCTREPCMSolenoids, HAL_InitializeCTREPCM, HAL_SetCTREPCMClosedLoopControl,
+    HAL_SetCTREPCMOneShotDuration, HAL_SetCTREPCMSolenoids,
+};
 
-use crate::{error::{allocation_location_ptr, HALResult}, hal_call};
+use crate::{
+    error::{HALResult, allocation_location_ptr},
+    hal_call,
+};
 
 pub struct CTREPCM(HAL_CTREPCMHandle);
 
 impl CTREPCM {
     pub fn initialize(module: i32, allocation_location: Option<&CStr>) -> HALResult<Self> {
-        Ok(Self(hal_call!(HAL_InitializeCTREPCM(module, allocation_location_ptr(allocation_location)))?))
+        Ok(Self(hal_call!(HAL_InitializeCTREPCM(
+            module,
+            allocation_location_ptr(allocation_location)
+        ))?))
     }
 
     pub fn get_compressor(&self) -> HALResult<bool> {
@@ -84,15 +101,19 @@ impl CTREPCM {
     }
 
     pub fn set_one_shot_duration(&mut self, index: u32, duration_ms: u32) -> HALResult<()> {
-        hal_call!(HAL_SetCTREPCMOneShotDuration(self.0, index as i32, duration_ms as i32))
+        hal_call!(HAL_SetCTREPCMOneShotDuration(
+            self.0,
+            index as i32,
+            duration_ms as i32
+        ))
     }
-
-
 }
 
 impl Drop for CTREPCM {
     fn drop(&mut self) {
-        unsafe { HAL_FreeCTREPCM(self.0); }
+        unsafe {
+            HAL_FreeCTREPCM(self.0);
+        }
     }
 }
 

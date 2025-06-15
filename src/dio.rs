@@ -1,9 +1,21 @@
 use std::ffi::CStr;
 
-use wpihal_sys::{HAL_AllocateDigitalPWM, HAL_CheckDIOChannel, HAL_DigitalHandle, HAL_DigitalPWMHandle, HAL_FreeDIOPort, HAL_FreeDigitalPWM, HAL_GetDIO, HAL_GetDIODirection, HAL_GetFilterPeriod, HAL_GetFilterSelect, HAL_InitializeDIOPort, HAL_IsAnyPulsing, HAL_IsPulsing, HAL_PortHandle, HAL_Pulse, HAL_PulseMultiple, HAL_SetDIO, HAL_SetDIOSimDevice, HAL_SetDigitalPWMDutyCycle, HAL_SetDigitalPWMOutputChannel, HAL_SetDigitalPWMPPS, HAL_SetDigitalPWMRate, HAL_SetFilterPeriod, HAL_SetFilterSelect};
+use wpihal_sys::{
+    HAL_AllocateDigitalPWM, HAL_CheckDIOChannel, HAL_DigitalHandle, HAL_DigitalPWMHandle,
+    HAL_FreeDIOPort, HAL_FreeDigitalPWM, HAL_GetDIO, HAL_GetDIODirection, HAL_GetFilterPeriod,
+    HAL_GetFilterSelect, HAL_InitializeDIOPort, HAL_IsAnyPulsing, HAL_IsPulsing, HAL_PortHandle,
+    HAL_Pulse, HAL_PulseMultiple, HAL_SetDIO, HAL_SetDIOSimDevice, HAL_SetDigitalPWMDutyCycle,
+    HAL_SetDigitalPWMOutputChannel, HAL_SetDigitalPWMPPS, HAL_SetDigitalPWMRate,
+    HAL_SetFilterPeriod, HAL_SetFilterSelect,
+};
 
-use crate::{analog_trigger::{AnalogTrigger, AnalogTriggerType}, error::{allocation_location_ptr, HALResult}, hal_call, sim_device::SimDevice, Handle};
-
+use crate::{
+    Handle,
+    analog_trigger::{AnalogTrigger, AnalogTriggerType},
+    error::{HALResult, allocation_location_ptr},
+    hal_call,
+    sim_device::SimDevice,
+};
 
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -28,12 +40,22 @@ impl From<i32> for DigitalInputFilterIndex {
 pub struct DIO(HAL_DigitalHandle);
 
 impl DIO {
-    pub fn initialize(port: HAL_PortHandle, input: bool, allocation_location: Option<&CStr>) -> HALResult<DIO> {
-        Ok(Self(hal_call!(HAL_InitializeDIOPort(port, input as i32, allocation_location_ptr(allocation_location)))?))
+    pub fn initialize(
+        port: HAL_PortHandle,
+        input: bool,
+        allocation_location: Option<&CStr>,
+    ) -> HALResult<DIO> {
+        Ok(Self(hal_call!(HAL_InitializeDIOPort(
+            port,
+            input as i32,
+            allocation_location_ptr(allocation_location)
+        ))?))
     }
 
     pub fn set_sim_device(&mut self, handle: &SimDevice) {
-        unsafe { HAL_SetDIOSimDevice(self.0, handle.handle()); }
+        unsafe {
+            HAL_SetDIOSimDevice(self.0, handle.handle());
+        }
     }
 
     pub fn set(&mut self, value: bool) -> HALResult<()> {
@@ -73,7 +95,9 @@ impl DIO {
     }
 
     pub fn get_filter(&self) -> HALResult<DigitalInputFilterIndex> {
-        Ok(DigitalInputFilterIndex::from(hal_call!(HAL_GetFilterSelect(self.0))?))
+        Ok(DigitalInputFilterIndex::from(hal_call!(
+            HAL_GetFilterSelect(self.0)
+        )?))
     }
 
     pub fn set_filter_period(filter: DigitalInputFilterIndex, value: u64) -> HALResult<()> {
@@ -86,13 +110,13 @@ impl DIO {
     pub fn check_channel(channel: i32) -> bool {
         unsafe { HAL_CheckDIOChannel(channel) != 0 }
     }
-
 }
-
 
 impl Drop for DIO {
     fn drop(&mut self) {
-        unsafe { HAL_FreeDIOPort(self.0); }
+        unsafe {
+            HAL_FreeDIOPort(self.0);
+        }
     }
 }
 
@@ -132,7 +156,9 @@ impl DigitalPWM {
 
 impl Drop for DigitalPWM {
     fn drop(&mut self) {
-        unsafe { HAL_FreeDigitalPWM(self.0); }
+        unsafe {
+            HAL_FreeDigitalPWM(self.0);
+        }
     }
 }
 
@@ -146,7 +172,7 @@ impl<'a> DigitalSource<'a> {
     pub fn analog_trigger_type(&self) -> AnalogTriggerType {
         match self {
             DigitalSource::DigitalInput(_) => AnalogTriggerType::kInWindow,
-            DigitalSource::AnalogTrigger(_, hal_analog_trigger_type) => *hal_analog_trigger_type
+            DigitalSource::AnalogTrigger(_, hal_analog_trigger_type) => *hal_analog_trigger_type,
         }
     }
     pub unsafe fn raw_handle(&self) -> i32 {
@@ -155,6 +181,6 @@ impl<'a> DigitalSource<'a> {
                 DigitalSource::DigitalInput(d) => d.raw_handle(),
                 DigitalSource::AnalogTrigger(a, _) => a.raw_handle(),
             }
-        } 
+        }
     }
 }

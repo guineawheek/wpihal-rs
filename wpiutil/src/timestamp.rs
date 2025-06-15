@@ -3,7 +3,7 @@ pub fn now_default() -> u64 {
     unsafe { wpiutil_sys::WPI_NowDefault() }
 }
 
-/// Sets a new monotonic timer. 
+/// Sets a new monotonic timer.
 pub fn set_now_impl(now_impl: extern "C" fn() -> u64) {
     unsafe {
         wpiutil_sys::WPI_SetNowImpl(Some(now_impl));

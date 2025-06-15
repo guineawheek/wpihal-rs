@@ -1,27 +1,26 @@
-use std::{ffi::{c_void, CStr}, time::Duration};
+use std::{
+    ffi::{CStr, c_void},
+    time::Duration,
+};
 
 use error::{HALError, HALResult};
-use wpihal_sys::{HAL_ExpandFPGATime, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount, HAL_GetFPGAButton, HAL_GetFPGATime, HAL_GetFPGAVersion, HAL_GetLastError, HAL_GetPort, HAL_GetPortWithModule, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber, HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond, HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize, HAL_PortHandle, HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter, HAL_SimPeriodicBefore, WPI_String};
+use wpihal_sys::{
+    HAL_ExpandFPGATime, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount,
+    HAL_GetFPGAButton, HAL_GetFPGATime, HAL_GetFPGAVersion, HAL_GetLastError, HAL_GetPort,
+    HAL_GetPortWithModule, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber,
+    HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond, HAL_GetSystemTimeValid,
+    HAL_GetTeamNumber, HAL_Initialize, HAL_PortHandle, HAL_RuntimeType, HAL_Shutdown,
+    HAL_SimPeriodicAfter, HAL_SimPeriodicBefore, WPI_String,
+};
 use wpiutil::wpistring::WPIString;
 
 /// this is the higher level package
 /// i guess
 
-
-/// roboRIO accelerometer functions
-pub mod accelerometer;
 /// addressable ws2812 leds
 pub mod addressable_led;
-/// analog accumulator
-pub mod analog_accumulator;
-/// analog gyro (my condolences)
-pub mod analog_gyro;
 /// analog input
 pub mod analog_input;
-/// analog output
-pub mod analog_output;
-/// analog trigger
-pub mod analog_trigger;
 /// can bus
 pub mod can;
 /// can api
@@ -58,8 +57,6 @@ pub mod ports;
 pub mod power;
 /// power distribution
 pub mod power_distribution;
-/// Threads
-pub mod threads;
 /// PWM output
 pub mod pwm;
 /// relays
@@ -72,6 +69,8 @@ pub mod serial_port;
 pub mod sim_device;
 /// SPI
 pub mod spi;
+/// Threads
+pub mod threads;
 /// usage reporting
 pub mod usage_reporting;
 /// HALValue
@@ -94,7 +93,7 @@ pub trait Handle<T> {
     /// Unsafe because usage of the raw handle can violate ownership.
     unsafe fn raw_handle(&self) -> T;
     /// Creates a new instance of the struct from a raw handle.
-    /// Unsafe because usage of the raw handle can violate ownership -- 
+    /// Unsafe because usage of the raw handle can violate ownership --
     /// in particular, dropping the new object may cause double-frees.
     unsafe fn from_raw_handle(handle: T) -> Self;
 }
@@ -134,16 +133,18 @@ pub fn get_last_error() -> (HALError, String) {
     }
 }
 
-
 pub fn get_fpga_version() -> HALResult<i32> {
     hal_call!(HAL_GetFPGAVersion())
 }
 
 pub fn get_serial_number() -> WPIString {
     let mut s: WPI_String = Default::default();
-    unsafe { 
-        HAL_GetSerialNumber(&mut s); 
-        WPIString::from_raw(wpiutil::wpistring::WPI_String { str_:  s.str_, len: s.len })
+    unsafe {
+        HAL_GetSerialNumber(&mut s);
+        WPIString::from_raw(wpiutil::wpistring::WPI_String {
+            str_: s.str_,
+            len: s.len,
+        })
     }
 }
 
@@ -151,7 +152,10 @@ pub fn get_comments() -> WPIString {
     let mut s: WPI_String = Default::default();
     unsafe {
         HAL_GetComments(&mut s);
-        WPIString::from_raw(wpiutil::wpistring::WPI_String { str_:  s.str_, len: s.len })
+        WPIString::from_raw(wpiutil::wpistring::WPI_String {
+            str_: s.str_,
+            len: s.len,
+        })
     }
 }
 
@@ -227,15 +231,21 @@ pub fn initialize_common() -> bool {
 }
 
 pub fn shutdown() {
-    unsafe { HAL_Shutdown(); }
+    unsafe {
+        HAL_Shutdown();
+    }
 }
 
 pub fn sim_periodic_before() {
-    unsafe { HAL_SimPeriodicBefore(); }
+    unsafe {
+        HAL_SimPeriodicBefore();
+    }
 }
 
 pub fn sim_periodic_after() {
-    unsafe { HAL_SimPeriodicAfter(); }
+    unsafe {
+        HAL_SimPeriodicAfter();
+    }
 }
 
 #[allow(non_snake_case)]

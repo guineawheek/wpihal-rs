@@ -1,8 +1,22 @@
 use std::ffi::CStr;
 
-use wpihal_sys::{HAL_CheckREVPHModuleNumber, HAL_CheckREVPHSolenoidChannel, HAL_ClearREVPHStickyFaults, HAL_FireREVPHOneShot, HAL_FreeREVPH, HAL_GetREVPH5VVoltage, HAL_GetREVPHAnalogVoltage, HAL_GetREVPHCompressor, HAL_GetREVPHCompressorCurrent, HAL_GetREVPHFaults, HAL_GetREVPHPressureSwitch, HAL_GetREVPHSolenoidCurrent, HAL_GetREVPHSolenoidDisabledList, HAL_GetREVPHSolenoidVoltage, HAL_GetREVPHSolenoids, HAL_GetREVPHStickyFaults, HAL_GetREVPHVersion, HAL_GetREVPHVoltage, HAL_InitializeREVPH, HAL_REVPHCompressorConfig, HAL_REVPHFaults, HAL_REVPHHandle, HAL_REVPHStickyFaults, HAL_REVPHVersion, HAL_SetREVPHClosedLoopControlAnalog, HAL_SetREVPHClosedLoopControlDigital, HAL_SetREVPHClosedLoopControlDisabled, HAL_SetREVPHClosedLoopControlHybrid, HAL_SetREVPHCompressorConfig, HAL_SetREVPHSolenoids};
+use wpihal_sys::{
+    HAL_CheckREVPHModuleNumber, HAL_CheckREVPHSolenoidChannel, HAL_ClearREVPHStickyFaults,
+    HAL_FireREVPHOneShot, HAL_FreeREVPH, HAL_GetREVPH5VVoltage, HAL_GetREVPHAnalogVoltage,
+    HAL_GetREVPHCompressor, HAL_GetREVPHCompressorCurrent, HAL_GetREVPHFaults,
+    HAL_GetREVPHPressureSwitch, HAL_GetREVPHSolenoidCurrent, HAL_GetREVPHSolenoidDisabledList,
+    HAL_GetREVPHSolenoidVoltage, HAL_GetREVPHSolenoids, HAL_GetREVPHStickyFaults,
+    HAL_GetREVPHVersion, HAL_GetREVPHVoltage, HAL_InitializeREVPH, HAL_REVPHCompressorConfig,
+    HAL_REVPHFaults, HAL_REVPHHandle, HAL_REVPHStickyFaults, HAL_REVPHVersion,
+    HAL_SetREVPHClosedLoopControlAnalog, HAL_SetREVPHClosedLoopControlDigital,
+    HAL_SetREVPHClosedLoopControlDisabled, HAL_SetREVPHClosedLoopControlHybrid,
+    HAL_SetREVPHCompressorConfig, HAL_SetREVPHSolenoids,
+};
 
-use crate::{error::{allocation_location_ptr, HALResult}, hal_call};
+use crate::{
+    error::{HALResult, allocation_location_ptr},
+    hal_call,
+};
 
 pub type REVPHCompressorConfig = HAL_REVPHCompressorConfig;
 pub type REVPHVersion = HAL_REVPHVersion;
@@ -20,7 +34,10 @@ pub struct REVPH(HAL_REVPHHandle);
 
 impl REVPH {
     pub fn initialize(module: i32, allocation_location: Option<&CStr>) -> HALResult<Self> {
-        Ok(Self(hal_call!(HAL_InitializeREVPH(module, allocation_location_ptr(allocation_location)))?))
+        Ok(Self(hal_call!(HAL_InitializeREVPH(
+            module,
+            allocation_location_ptr(allocation_location)
+        ))?))
     }
 
     pub fn get_compressor(&self) -> HALResult<bool> {
@@ -33,10 +50,28 @@ impl REVPH {
 
     pub fn set_closed_loop_control(&mut self, mode: ClosedLoopControlMode) -> HALResult<()> {
         match mode {
-            ClosedLoopControlMode::Disabled => hal_call!(HAL_SetREVPHClosedLoopControlDisabled(self.0)),
-            ClosedLoopControlMode::Digital => hal_call!(HAL_SetREVPHClosedLoopControlDigital(self.0)),
-            ClosedLoopControlMode::Analog { min_voltage, max_voltage } => hal_call!(HAL_SetREVPHClosedLoopControlAnalog(self.0, min_voltage, max_voltage)),
-            ClosedLoopControlMode::Hybrid { min_voltage, max_voltage } => hal_call!(HAL_SetREVPHClosedLoopControlHybrid(self.0, min_voltage, max_voltage)),
+            ClosedLoopControlMode::Disabled => {
+                hal_call!(HAL_SetREVPHClosedLoopControlDisabled(self.0))
+            }
+            ClosedLoopControlMode::Digital => {
+                hal_call!(HAL_SetREVPHClosedLoopControlDigital(self.0))
+            }
+            ClosedLoopControlMode::Analog {
+                min_voltage,
+                max_voltage,
+            } => hal_call!(HAL_SetREVPHClosedLoopControlAnalog(
+                self.0,
+                min_voltage,
+                max_voltage
+            )),
+            ClosedLoopControlMode::Hybrid {
+                min_voltage,
+                max_voltage,
+            } => hal_call!(HAL_SetREVPHClosedLoopControlHybrid(
+                self.0,
+                min_voltage,
+                max_voltage
+            )),
         }
     }
 
@@ -73,7 +108,6 @@ impl REVPH {
         hal_call!(HAL_GetREVPHVersion(self.0, &mut version))?;
         Ok(version)
     }
-
 
     pub fn get_solenoids(&self) -> HALResult<u32> {
         Ok(hal_call!(HAL_GetREVPHSolenoids(self.0))? as u32)
@@ -114,12 +148,12 @@ impl REVPH {
     pub fn check_module_number(module: i32) -> bool {
         unsafe { HAL_CheckREVPHModuleNumber(module) != 0 }
     }
-
-
 }
 
 impl Drop for REVPH {
     fn drop(&mut self) {
-        unsafe { HAL_FreeREVPH(self.0); }
+        unsafe {
+            HAL_FreeREVPH(self.0);
+        }
     }
 }

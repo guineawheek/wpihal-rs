@@ -1,9 +1,12 @@
 use std::ffi::CStr;
 
-use wpihal_sys::{HAL_CancelNotifierAlarm, HAL_CleanNotifier, HAL_InitializeNotifier, HAL_NotifierHandle, HAL_SetNotifierName, HAL_SetNotifierThreadPriority, HAL_StopNotifier, HAL_UpdateNotifierAlarm, HAL_WaitForNotifierAlarm};
+use wpihal_sys::{
+    HAL_CancelNotifierAlarm, HAL_CleanNotifier, HAL_InitializeNotifier, HAL_NotifierHandle,
+    HAL_SetNotifierName, HAL_SetNotifierThreadPriority, HAL_StopNotifier, HAL_UpdateNotifierAlarm,
+    HAL_WaitForNotifierAlarm,
+};
 
 use crate::{error::HALResult, hal_call};
-
 
 pub struct Notifier(HAL_NotifierHandle);
 
@@ -35,11 +38,12 @@ impl Notifier {
     pub fn wait_for_alarm(&self) -> HALResult<u64> {
         hal_call!(HAL_WaitForNotifierAlarm(self.0))
     }
-
 }
 
 impl Drop for Notifier {
     fn drop(&mut self) {
-        unsafe { HAL_CleanNotifier(self.0); }
+        unsafe {
+            HAL_CleanNotifier(self.0);
+        }
     }
 }

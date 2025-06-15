@@ -1,18 +1,33 @@
 use std::ffi::CStr;
 
-use wpihal_sys::{HAL_CheckAnalogInputChannel, HAL_CheckAnalogModule, HAL_FreeAnalogInputPort, HAL_GetAnalogAverageBits, HAL_GetAnalogAverageValue, HAL_GetAnalogAverageVoltage, HAL_GetAnalogLSBWeight, HAL_GetAnalogOffset, HAL_GetAnalogOversampleBits, HAL_GetAnalogSampleRate, HAL_GetAnalogValue, HAL_GetAnalogValueToVolts, HAL_GetAnalogVoltage, HAL_GetAnalogVoltsToValue, HAL_InitializeAnalogInputPort, HAL_IsAccumulatorChannel, HAL_PortHandle, HAL_SetAnalogAverageBits, HAL_SetAnalogInputSimDevice, HAL_SetAnalogOversampleBits, HAL_SetAnalogSampleRate};
+use wpihal_sys::{
+    HAL_CheckAnalogInputChannel, HAL_CheckAnalogModule, HAL_FreeAnalogInputPort,
+    HAL_GetAnalogAverageBits, HAL_GetAnalogAverageValue, HAL_GetAnalogAverageVoltage,
+    HAL_GetAnalogLSBWeight, HAL_GetAnalogOffset, HAL_GetAnalogOversampleBits,
+    HAL_GetAnalogSampleRate, HAL_GetAnalogValue, HAL_GetAnalogValueToVolts, HAL_GetAnalogVoltage,
+    HAL_GetAnalogVoltsToValue, HAL_InitializeAnalogInputPort, HAL_SetAnalogAverageBits,
+    HAL_SetAnalogInputSimDevice, HAL_SetAnalogOversampleBits, HAL_SetAnalogSampleRate,
+};
 
-use crate::{error::{allocation_location_ptr, HALResult}, hal_call, sim_device::SimDevice, Handle};
+use crate::{
+    Handle,
+    error::{HALResult, allocation_location_ptr},
+    hal_call,
+    sim_device::SimDevice,
+};
 
-/// Raw analog input handle 
+/// Raw analog input handle
 pub use wpihal_sys::HAL_AnalogInputHandle as AnalogInputHandle;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct AnalogInput(AnalogInputHandle);
 
 impl AnalogInput {
-    pub fn initialize(port: HAL_PortHandle, allocation_location: Option<&CStr>) -> HALResult<Self> {
-        Ok(Self(hal_call!(HAL_InitializeAnalogInputPort(port, allocation_location_ptr(allocation_location)))?))
+    pub fn initialize(channel: i32, allocation_location: Option<&CStr>) -> HALResult<Self> {
+        Ok(Self(hal_call!(HAL_InitializeAnalogInputPort(
+            channel,
+            allocation_location_ptr(allocation_location)
+        ))?))
     }
 
     pub fn is_accumulator_channel(&self) -> HALResult<bool> {
@@ -21,7 +36,9 @@ impl AnalogInput {
 
     /// Sets the sim device
     pub fn set_sim_device(&mut self, handle: &SimDevice) {
-        unsafe { HAL_SetAnalogInputSimDevice(self.0, handle.handle()); }
+        unsafe {
+            HAL_SetAnalogInputSimDevice(self.0, handle.handle());
+        }
     }
 
     /// Applies universally to all analog inputs.
@@ -92,12 +109,13 @@ impl AnalogInput {
     pub fn check_input_channel(channel: i32) -> bool {
         unsafe { HAL_CheckAnalogInputChannel(channel) != 0 }
     }
-
 }
 
 impl Drop for AnalogInput {
     fn drop(&mut self) {
-        unsafe { HAL_FreeAnalogInputPort(self.0); }
+        unsafe {
+            HAL_FreeAnalogInputPort(self.0);
+        }
     }
 }
 

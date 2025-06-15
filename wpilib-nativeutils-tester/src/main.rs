@@ -18,24 +18,36 @@ fn main() {
     let buildlibs = out_path.join("buildlibs");
     std::fs::create_dir_all(&buildlibs).unwrap();
 
-    wpilib_nativeutils::download_artifact_zip_to_dir(platform, &buildlibs, &repos, &Artifact {
-        artifact_type: ArtifactType::Headers,
-        group_id: "edu.wpi.first.hal",
-        artifact_id: "hal-cpp",
-        version,
-    }).unwrap();
+    wpilib_nativeutils::download_artifact_zip_to_dir(
+        platform,
+        &buildlibs,
+        &repos,
+        &Artifact {
+            artifact_type: ArtifactType::Headers,
+            group_id: "edu.wpi.first.hal",
+            artifact_id: "hal-cpp",
+            version,
+        },
+    )
+    .unwrap();
 
-    wpilib_nativeutils::download_artifact_zip_to_dir(platform, &buildlibs, &repos, &Artifact {
-        artifact_type: ArtifactType::Shared,
-        group_id: "edu.wpi.first.hal",
-        artifact_id: "hal-cpp",
-        version,
-    }).unwrap();
+    wpilib_nativeutils::download_artifact_zip_to_dir(
+        platform,
+        &buildlibs,
+        &repos,
+        &Artifact {
+            artifact_type: ArtifactType::Shared,
+            group_id: "edu.wpi.first.hal",
+            artifact_id: "hal-cpp",
+            version,
+        },
+    )
+    .unwrap();
 }
 
 pub struct ResourceEnumBuilder {
     name: String,
-    variants: BTreeMap<String, i32>
+    variants: BTreeMap<String, i32>,
 }
 
 impl ResourceEnumBuilder {
@@ -46,9 +58,12 @@ impl ResourceEnumBuilder {
         }
     }
     pub fn generate_enum(&self) -> String {
-        let mut s = format!("#[derive(Debug, Copy, Clone, PartialEq, Eq)]\n#[repr(i32)]\npub enum {} {{\n", self.name);
+        let mut s = format!(
+            "#[derive(Debug, Copy, Clone, PartialEq, Eq)]\n#[repr(i32)]\npub enum {} {{\n",
+            self.name
+        );
         let mut variants: Vec<(&String, &i32)> = self.variants.iter().collect();
-        variants.sort_by(|(_, v1), (_, v2)| { v1.cmp(v2) });
+        variants.sort_by(|(_, v1), (_, v2)| v1.cmp(v2));
         for (k, v) in variants {
             s.push_str(format!("    k{k} = {v},\n").as_str());
         }
@@ -68,7 +83,8 @@ fn test_ur_parsing() {
         }
         let ent = enum_ents.get_mut(enum_name).unwrap();
 
-        ent.variants.insert(enum_var.to_string(), value.parse::<i32>().unwrap());
+        ent.variants
+            .insert(enum_var.to_string(), value.parse::<i32>().unwrap());
     }
 
     for ent in enum_ents.values() {

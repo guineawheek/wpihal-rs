@@ -1,4 +1,12 @@
-use wpihal_sys::{HAL_EncoderEncodingType, HAL_EncoderHandle, HAL_EncoderIndexingType, HAL_FreeEncoder, HAL_GetEncoder, HAL_GetEncoderDecodingScaleFactor, HAL_GetEncoderDirection, HAL_GetEncoderDistance, HAL_GetEncoderDistancePerPulse, HAL_GetEncoderEncodingScale, HAL_GetEncoderEncodingType, HAL_GetEncoderFPGAIndex, HAL_GetEncoderPeriod, HAL_GetEncoderRate, HAL_GetEncoderRaw, HAL_GetEncoderStopped, HAL_InitializeEncoder, HAL_ResetEncoder, HAL_SetEncoderDistancePerPulse, HAL_SetEncoderIndexSource, HAL_SetEncoderMaxPeriod, HAL_SetEncoderMinRate, HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice};
+use wpihal_sys::{
+    HAL_EncoderEncodingType, HAL_EncoderHandle, HAL_EncoderIndexingType, HAL_FreeEncoder,
+    HAL_GetEncoder, HAL_GetEncoderDecodingScaleFactor, HAL_GetEncoderDirection,
+    HAL_GetEncoderDistance, HAL_GetEncoderDistancePerPulse, HAL_GetEncoderEncodingScale,
+    HAL_GetEncoderEncodingType, HAL_GetEncoderFPGAIndex, HAL_GetEncoderPeriod, HAL_GetEncoderRate,
+    HAL_GetEncoderRaw, HAL_GetEncoderStopped, HAL_InitializeEncoder, HAL_ResetEncoder,
+    HAL_SetEncoderDistancePerPulse, HAL_SetEncoderIndexSource, HAL_SetEncoderMaxPeriod,
+    HAL_SetEncoderMinRate, HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice,
+};
 
 use crate::{dio::DigitalSource, error::HALResult, hal_call, sim_device::SimDevice};
 
@@ -13,11 +21,19 @@ pub struct Encoder<'a> {
 }
 
 impl<'a> Encoder<'a> {
-    pub fn initialize(a_channel: DigitalSource<'a>, b_channel: DigitalSource<'a>, reverse_dir: bool, encoding: EncodingType) -> HALResult<Self> {
+    pub fn initialize(
+        a_channel: DigitalSource<'a>,
+        b_channel: DigitalSource<'a>,
+        reverse_dir: bool,
+        encoding: EncodingType,
+    ) -> HALResult<Self> {
         let handle = hal_call!(HAL_InitializeEncoder(
-            a_channel.raw_handle(), a_channel.analog_trigger_type(),
-            b_channel.raw_handle(), b_channel.analog_trigger_type(),
-            reverse_dir as i32, encoding
+            a_channel.raw_handle(),
+            a_channel.analog_trigger_type(),
+            b_channel.raw_handle(),
+            b_channel.analog_trigger_type(),
+            reverse_dir as i32,
+            encoding
         ))?;
 
         Ok(Self {
@@ -28,7 +44,9 @@ impl<'a> Encoder<'a> {
     }
 
     pub fn set_sim_device(&mut self, device: &SimDevice) {
-        unsafe { HAL_SetEncoderSimDevice(self.handle, device.handle());}
+        unsafe {
+            HAL_SetEncoderSimDevice(self.handle, device.handle());
+        }
     }
 
     pub fn get(&self) -> HALResult<i32> {
@@ -76,18 +94,31 @@ impl<'a> Encoder<'a> {
     }
 
     pub fn set_distance_per_pulse(&mut self, distance_per_pulse: f64) -> HALResult<()> {
-        hal_call!(HAL_SetEncoderDistancePerPulse(self.handle, distance_per_pulse))
+        hal_call!(HAL_SetEncoderDistancePerPulse(
+            self.handle,
+            distance_per_pulse
+        ))
     }
 
     pub fn set_reverse_direction(&mut self, reverse_dir: bool) -> HALResult<()> {
-        hal_call!(HAL_SetEncoderReverseDirection(self.handle, reverse_dir as i32))
+        hal_call!(HAL_SetEncoderReverseDirection(
+            self.handle,
+            reverse_dir as i32
+        ))
     }
 
     pub fn set_samples_to_average(&mut self, samples_to_average: i32) -> HALResult<()> {
-        hal_call!(HAL_SetEncoderReverseDirection(self.handle, samples_to_average))
+        hal_call!(HAL_SetEncoderReverseDirection(
+            self.handle,
+            samples_to_average
+        ))
     }
 
-    pub fn set_index_source(&mut self, index_pin: DigitalSource<'a>, indexing_type: IndexingType) -> HALResult<()> {
+    pub fn set_index_source(
+        &mut self,
+        index_pin: DigitalSource<'a>,
+        indexing_type: IndexingType,
+    ) -> HALResult<()> {
         hal_call!(HAL_SetEncoderIndexSource(
             self.handle,
             index_pin.raw_handle(),
@@ -115,11 +146,12 @@ impl<'a> Encoder<'a> {
     pub unsafe fn raw_handle(&self) -> HAL_EncoderHandle {
         self.handle
     }
-
 }
 
 impl<'a> Drop for Encoder<'a> {
     fn drop(&mut self) {
-        unsafe { HAL_FreeEncoder(self.handle); }
+        unsafe {
+            HAL_FreeEncoder(self.handle);
+        }
     }
 }

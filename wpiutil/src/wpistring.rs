@@ -1,14 +1,14 @@
 use core::str;
 use std::{ffi::CStr, fmt::Display, mem::ManuallyDrop, ops::Deref};
 
-use wpiutil_sys::{WPI_AllocateString, WPI_FreeString};
 pub use wpiutil_sys::WPI_String;
+use wpiutil_sys::{WPI_AllocateString, WPI_FreeString};
 
 /// A WPI_String that needs to be freed internally with [`WPI_FreeString`].
 /// This implements [`Drop`] so this is automatically handled for you.
-/// 
+///
 /// Per Thad in https://github.com/wpilibsuite/allwpilib/pull/6299 the semantics are as follows:
-/// 
+///
 /// * WPILib will not have any APIs that manipulate a string allocated externally.
 ///   This means WPI_String can be const, as across the boundary it is always const.
 /// * If a WPILib API takes a `const WPI_String*`, WPILib will not manipulate or attempt to free that string, and that string is treated as an input.
@@ -31,15 +31,18 @@ impl WPIString {
     /// Creates a new WPIString from a [`CStr`] without allocation.
     /// The WPIStringRef must not live longer than the CStr.
     pub fn from_cstr<'a>(s: &'a CStr) -> WPIStringRef<'a> {
-        ManuallyDrop::new(WPIString(WPI_String { str_: s.as_ptr(), len: s.count_bytes() }))
+        ManuallyDrop::new(WPIString(WPI_String {
+            str_: s.as_ptr(),
+            len: s.count_bytes(),
+        }))
     }
 
     /// Creates a new WPIString from a [`str`] without allocation.
     /// The WPIStringRef must not live longer than the cstr.
     pub fn from_str<'a>(s: &'a str) -> WPIStringRef<'a> {
-        ManuallyDrop::new(WPIString(WPI_String { 
+        ManuallyDrop::new(WPIString(WPI_String {
             str_: s.as_ptr() as *const std::os::raw::c_char,
-            len: s.as_bytes().len()
+            len: s.as_bytes().len(),
         }))
     }
 
@@ -48,10 +51,9 @@ impl WPIString {
         let mut wpi_str = WPI_String::default();
         unsafe {
             WPI_AllocateString(&mut wpi_str, s.as_bytes().len());
-        }         
+        }
         Self(wpi_str)
     }
-
 
     pub fn from_raw(wpi_str: WPI_String) -> Self {
         Self(wpi_str)
@@ -59,13 +61,14 @@ impl WPIString {
 
     /// View of the underlying utf8 string as a str.
     /// This assumes that the underlying const char* is, in fact, a utf8 string.
-    /// 
+    ///
     /// Which it should be. If it isn't, that's a WPILib bug.
     pub fn as_str<'a>(&'a self) -> &'a str {
         unsafe {
-            str::from_utf8_unchecked(
-                core::slice::from_raw_parts(self.0.str_ as *const u8, self.0.len)
-            )
+            str::from_utf8_unchecked(core::slice::from_raw_parts(
+                self.0.str_ as *const u8,
+                self.0.len,
+            ))
         }
     }
 
@@ -87,7 +90,9 @@ impl Deref for WPIString {
 
 impl Drop for WPIString {
     fn drop(&mut self) {
-        unsafe { WPI_FreeString(&self.0 as *const WPI_String); }
+        unsafe {
+            WPI_FreeString(&self.0 as *const WPI_String);
+        }
     }
 }
 

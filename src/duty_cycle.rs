@@ -1,12 +1,22 @@
-use wpihal_sys::{HAL_DutyCycleHandle, HAL_FreeDutyCycle, HAL_GetDutyCycleFPGAIndex, HAL_GetDutyCycleFrequency, HAL_GetDutyCycleHighTime, HAL_GetDutyCycleOutput, HAL_GetDutyCycleOutputScaleFactor, HAL_InitializeDutyCycle, HAL_SetDutyCycleSimDevice};
+use wpihal_sys::{
+    HAL_DutyCycleHandle, HAL_FreeDutyCycle, HAL_GetDutyCycleFPGAIndex, HAL_GetDutyCycleFrequency,
+    HAL_GetDutyCycleHighTime, HAL_GetDutyCycleOutput, HAL_GetDutyCycleOutputScaleFactor,
+    HAL_InitializeDutyCycle, HAL_SetDutyCycleSimDevice,
+};
 
-use crate::{analog_trigger::{AnalogTrigger, AnalogTriggerType}, dio::DIO, error::HALResult, hal_call, sim_device::SimDevice, Handle};
-
+use crate::{
+    Handle,
+    analog_trigger::{AnalogTrigger, AnalogTriggerType},
+    dio::DIO,
+    error::HALResult,
+    hal_call,
+    sim_device::SimDevice,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DutyCycle<'a> {
     handle: HAL_DutyCycleHandle,
-    src: DutyCycleSource<'a>
+    src: DutyCycleSource<'a>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -18,17 +28,31 @@ enum DutyCycleSource<'a> {
 
 impl<'a> DutyCycle<'a> {
     pub fn initialize_from_dio(dio: &'a DIO) -> HALResult<Self> {
-        let handle = hal_call!(HAL_InitializeDutyCycle(dio.raw_handle(), AnalogTriggerType::kInWindow))?;
-        Ok(Self { handle, src: DutyCycleSource::DigitalHandle(dio) })
+        let handle = hal_call!(HAL_InitializeDutyCycle(
+            dio.raw_handle(),
+            AnalogTriggerType::kInWindow
+        ))?;
+        Ok(Self {
+            handle,
+            src: DutyCycleSource::DigitalHandle(dio),
+        })
     }
 
-    pub fn initialize_from_analog_trigger(trg: &'a AnalogTrigger<'a>, trg_type: AnalogTriggerType) -> HALResult<Self> {
+    pub fn initialize_from_analog_trigger(
+        trg: &'a AnalogTrigger<'a>,
+        trg_type: AnalogTriggerType,
+    ) -> HALResult<Self> {
         let handle = hal_call!(HAL_InitializeDutyCycle(trg.raw_handle(), trg_type))?;
-        Ok(Self { handle, src: DutyCycleSource::AnalogTriggerHandle(trg) })
+        Ok(Self {
+            handle,
+            src: DutyCycleSource::AnalogTriggerHandle(trg),
+        })
     }
 
     pub fn set_sim_device(&mut self, handle: &SimDevice) {
-        unsafe { HAL_SetDutyCycleSimDevice(self.handle, handle.handle()); }
+        unsafe {
+            HAL_SetDutyCycleSimDevice(self.handle, handle.handle());
+        }
     }
 
     pub fn get_frequency(&self) -> HALResult<i32> {
@@ -54,7 +78,9 @@ impl<'a> DutyCycle<'a> {
 
 impl<'a> Drop for DutyCycle<'a> {
     fn drop(&mut self) {
-        unsafe { HAL_FreeDutyCycle(self.handle); }
+        unsafe {
+            HAL_FreeDutyCycle(self.handle);
+        }
     }
 }
 
@@ -66,7 +92,7 @@ impl<'a> Handle<HAL_DutyCycleHandle> for DutyCycle<'a> {
     unsafe fn from_raw_handle(handle: HAL_DutyCycleHandle) -> Self {
         Self {
             handle,
-            src: DutyCycleSource::Unknown
+            src: DutyCycleSource::Unknown,
         }
     }
 }

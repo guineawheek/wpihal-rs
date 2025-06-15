@@ -1,12 +1,32 @@
-use wpihal_sys::{HAL_AddDMAAnalogAccumulator, HAL_AddDMAAnalogInput, HAL_AddDMAAveragedAnalogInput, HAL_AddDMACounter, HAL_AddDMACounterPeriod, HAL_AddDMADigitalSource, HAL_AddDMADutyCycle, HAL_AddDMAEncoder, HAL_ClearDMAExternalTriggers, HAL_ClearDMASensors, HAL_DMAHandle, HAL_DMASample, HAL_FreeDMA, HAL_GetDMASampleAnalogAccumulator, HAL_GetDMASampleAnalogInputRaw, HAL_GetDMASampleAveragedAnalogInputRaw, HAL_GetDMASampleCounter, HAL_GetDMASampleCounterPeriod, HAL_GetDMASampleDigitalSource, HAL_GetDMASampleDutyCycleOutputRaw, HAL_GetDMASampleEncoderPeriodRaw, HAL_GetDMASampleEncoderRaw, HAL_GetDMASampleTime, HAL_InitializeDMA, HAL_ReadDMA, HAL_SetDMAExternalTrigger, HAL_SetDMAPause, HAL_SetDMATimedTrigger, HAL_SetDMATimedTriggerCycles, HAL_StartDMA, HAL_StopDMA};
+use wpihal_sys::{
+    HAL_AddDMAAnalogAccumulator, HAL_AddDMAAnalogInput, HAL_AddDMAAveragedAnalogInput,
+    HAL_AddDMACounter, HAL_AddDMACounterPeriod, HAL_AddDMADigitalSource, HAL_AddDMADutyCycle,
+    HAL_AddDMAEncoder, HAL_ClearDMAExternalTriggers, HAL_ClearDMASensors, HAL_DMAHandle,
+    HAL_DMASample, HAL_FreeDMA, HAL_GetDMASampleAnalogAccumulator, HAL_GetDMASampleAnalogInputRaw,
+    HAL_GetDMASampleAveragedAnalogInputRaw, HAL_GetDMASampleCounter, HAL_GetDMASampleCounterPeriod,
+    HAL_GetDMASampleDigitalSource, HAL_GetDMASampleDutyCycleOutputRaw,
+    HAL_GetDMASampleEncoderPeriodRaw, HAL_GetDMASampleEncoderRaw, HAL_GetDMASampleTime,
+    HAL_InitializeDMA, HAL_ReadDMA, HAL_SetDMAExternalTrigger, HAL_SetDMAPause,
+    HAL_SetDMATimedTrigger, HAL_SetDMATimedTriggerCycles, HAL_StartDMA, HAL_StopDMA,
+};
 
-use crate::{analog_accumulator::AnalogAccumulator, analog_input::AnalogInput, counter::Counter, dio::{DigitalSource, DIO}, duty_cycle::DutyCycle, encoder::Encoder, error::{HALError, HALResult}, hal_call, Handle};
+use crate::{
+    Handle,
+    analog_accumulator::AnalogAccumulator,
+    analog_input::AnalogInput,
+    counter::Counter,
+    dio::{DIO, DigitalSource},
+    duty_cycle::DutyCycle,
+    encoder::Encoder,
+    error::{HALError, HALResult},
+    hal_call,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub enum DMAError {
     DMATimeout,
     DMAError,
-    HALError(HALError)
+    HALError(HALError),
 }
 
 impl core::fmt::Display for DMAError {
@@ -47,7 +67,10 @@ impl DMASample {
     }
 
     pub fn get_encoder_period_raw(&self, encoder: &Encoder) -> HALResult<i32> {
-        hal_call!(HAL_GetDMASampleEncoderPeriodRaw(&self.0, encoder.raw_handle()))
+        hal_call!(HAL_GetDMASampleEncoderPeriodRaw(
+            &self.0,
+            encoder.raw_handle()
+        ))
     }
 
     pub fn get_counter(&self, counter: &Counter) -> HALResult<i32> {
@@ -59,29 +82,45 @@ impl DMASample {
     }
 
     pub fn get_digital_source(&self, digital_source: &DIO) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetDMASampleDigitalSource(&self.0, digital_source.raw_handle()))? != 0)
+        Ok(hal_call!(HAL_GetDMASampleDigitalSource(
+            &self.0,
+            digital_source.raw_handle()
+        ))? != 0)
     }
 
     pub fn get_analog_input_raw(&self, analog_input: &AnalogInput) -> HALResult<i32> {
-        hal_call!(HAL_GetDMASampleAnalogInputRaw(&self.0, analog_input.raw_handle()))
+        hal_call!(HAL_GetDMASampleAnalogInputRaw(
+            &self.0,
+            analog_input.raw_handle()
+        ))
     }
 
     pub fn get_averaged_analog_input_raw(&self, analog_input: &AnalogInput) -> HALResult<i32> {
-        hal_call!(HAL_GetDMASampleAveragedAnalogInputRaw(&self.0, analog_input.raw_handle()))
+        hal_call!(HAL_GetDMASampleAveragedAnalogInputRaw(
+            &self.0,
+            analog_input.raw_handle()
+        ))
     }
 
     pub fn get_analog_accumulator(&self, analog_acc: &AnalogAccumulator) -> HALResult<(i64, i64)> {
         let mut count = 0i64;
         let mut value = 0i64;
-        hal_call!(HAL_GetDMASampleAnalogAccumulator(&self.0, analog_acc.raw_handle(), &mut count, &mut value))?;
+        hal_call!(HAL_GetDMASampleAnalogAccumulator(
+            &self.0,
+            analog_acc.raw_handle(),
+            &mut count,
+            &mut value
+        ))?;
         Ok((count, value))
     }
 
     pub fn get_duty_cycle_raw(&self, duty_cycle: &DutyCycle) -> HALResult<i32> {
-        hal_call!(HAL_GetDMASampleDutyCycleOutputRaw(&self.0, duty_cycle.raw_handle()))
+        hal_call!(HAL_GetDMASampleDutyCycleOutputRaw(
+            &self.0,
+            duty_cycle.raw_handle()
+        ))
     }
 }
-
 
 #[derive(Debug)]
 pub struct DMA(HAL_DMAHandle);
@@ -132,7 +171,10 @@ impl DMA {
     }
 
     pub fn add_averaged_analog_input(&mut self, analog_input: &AnalogInput) -> HALResult<()> {
-        hal_call!(HAL_AddDMAAveragedAnalogInput(self.0, analog_input.raw_handle()))
+        hal_call!(HAL_AddDMAAveragedAnalogInput(
+            self.0,
+            analog_input.raw_handle()
+        ))
     }
 
     pub fn add_analog_accumulator(&mut self, analog_acc: &AnalogAccumulator) -> HALResult<()> {
@@ -143,8 +185,19 @@ impl DMA {
         hal_call!(HAL_AddDMADutyCycle(self.0, duty_cycle.raw_handle()))
     }
 
-    pub fn set_external_trigger(&mut self, digital_source: &DigitalSource, rising: bool, falling: bool) -> HALResult<i32> {
-        hal_call!(HAL_SetDMAExternalTrigger(self.0, digital_source.raw_handle(), digital_source.analog_trigger_type(), rising as i32, falling as i32))
+    pub fn set_external_trigger(
+        &mut self,
+        digital_source: &DigitalSource,
+        rising: bool,
+        falling: bool,
+    ) -> HALResult<i32> {
+        hal_call!(HAL_SetDMAExternalTrigger(
+            self.0,
+            digital_source.raw_handle(),
+            digital_source.analog_trigger_type(),
+            rising as i32,
+            falling as i32
+        ))
     }
 
     pub fn clear_sensors(&mut self) -> HALResult<()> {
@@ -156,36 +209,34 @@ impl DMA {
     }
 
     pub fn start(&mut self, queue_depth: i32) -> HALResult<()> {
-        hal_call!(HAL_StartDMA(self.0, queue_depth))        
+        hal_call!(HAL_StartDMA(self.0, queue_depth))
     }
 
     pub fn stop(&mut self) -> HALResult<()> {
-        hal_call!(HAL_StopDMA(self.0))        
+        hal_call!(HAL_StopDMA(self.0))
     }
     // HAL_GetDMADirectPointer is not implemented due to lack of chipobject.
 
     pub fn read(&mut self, timeout_seconds: f64) -> Result<(DMASample, i32), DMAError> {
         let mut remaining_out = 0i32;
         let mut sample = HAL_DMASample::default();
-        match hal_call!(HAL_ReadDMA(self.0, &mut sample, timeout_seconds, &mut remaining_out))? {
-            wpihal_sys::HAL_DMAReadStatus::HAL_DMA_OK => {
-                Ok((DMASample(sample), remaining_out))
-            }
-            wpihal_sys::HAL_DMAReadStatus::HAL_DMA_TIMEOUT => {
-                Err(DMAError::DMATimeout)
-            }
-            wpihal_sys::HAL_DMAReadStatus::HAL_DMA_ERROR => {
-                Err(DMAError::DMAError)
-            }
+        match hal_call!(HAL_ReadDMA(
+            self.0,
+            &mut sample,
+            timeout_seconds,
+            &mut remaining_out
+        ))? {
+            wpihal_sys::HAL_DMAReadStatus::HAL_DMA_OK => Ok((DMASample(sample), remaining_out)),
+            wpihal_sys::HAL_DMAReadStatus::HAL_DMA_TIMEOUT => Err(DMAError::DMATimeout),
+            wpihal_sys::HAL_DMAReadStatus::HAL_DMA_ERROR => Err(DMAError::DMAError),
         }
-
     }
-
-
 }
 
 impl Drop for DMA {
     fn drop(&mut self) {
-        unsafe { HAL_FreeDMA(self.0); }
+        unsafe {
+            HAL_FreeDMA(self.0);
+        }
     }
 }
