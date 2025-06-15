@@ -4,7 +4,6 @@
 #![allow(deref_nullptr)]
 #![allow(rustdoc::broken_intra_doc_links)]
 #![allow(unused)]
-
-pub mod usage_reporting;
+#![allow(improper_ctypes)]
 
 include!(concat!(env!("OUT_DIR"), "/hal_bindings.rs"));

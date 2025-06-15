@@ -13,6 +13,14 @@ As such, you can add `wpihal` as a git dependency to your project toml:
 wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git" }
 ```
 
+I recommend pinning to a specific commit or branch.
+
+## Compiling for coprocessors
+
+Set `WPIHAL_COMPILE_FOR_COPROCESSOR=1` in your environment variables if you want to compile for arm64 coprocs instead of SystemCore.
+
+Otherwise arm64 is assumed to be systemcore.
+
 ## Why just the HAL?
 
 Past attempts at writing a WPILib port for Rust have proven to be...a bit much to reliably maintain.
@@ -48,4 +56,4 @@ Actual achievements of these aims is not certain and there are almost certainly 
 * Better guards against WPILib's overuse of `i32`s for things that are NOT i32 sized
 * macro-ized halsim wrapers
 * Versioning this in both the semver sense and the wpilib sense they are inconsistent with each other
-* Usage reporting enumization
+* depend on NTCore

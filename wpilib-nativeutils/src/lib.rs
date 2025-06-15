@@ -1,4 +1,4 @@
-use std::{fmt::Display, io::Cursor, path::{Path, PathBuf}};
+use std::{ffi::OsStr, fmt::Display, io::Cursor, path::{Path, PathBuf}};
 
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -99,6 +99,7 @@ pub enum Platform {
     LinuxAthena, // roborio
     LinuxArm32, // old and stinky coprocs
     LinuxArm64, // new coprocs
+    LinuxSystemCore, // systemcore
     LinuxX86_64, // Intel
     OsxUniversal, // macs
     WindowsX86_64, // WIntel
@@ -112,6 +113,7 @@ impl Platform {
             Platform::LinuxArm32 => "linuxarm32",
             Platform::LinuxArm64 => "linuxarm64",
             Platform::LinuxX86_64 => "linuxx86-64",
+            Platform::LinuxSystemCore => "linuxsystemcore",
             Platform::OsxUniversal => "osxuniversal",
             Platform::WindowsX86_64 => "windowsx86-64",
             Platform::WindowsArm64 => "windowsarm64"
@@ -124,6 +126,7 @@ impl Platform {
             Platform::LinuxArm32 => "linux",
             Platform::LinuxArm64 => "linux",
             Platform::LinuxX86_64 => "linux",
+            Platform::LinuxSystemCore => "linux",
             Platform::OsxUniversal => "osx",
             Platform::WindowsX86_64 => "windows",
             Platform::WindowsArm64 => "windows"
@@ -135,6 +138,7 @@ impl Platform {
             Platform::LinuxAthena => "athena",
             Platform::LinuxArm32 => "arm32",
             Platform::LinuxArm64 => "arm64",
+            Platform::LinuxSystemCore => "systemcore",
             Platform::LinuxX86_64 => "x86-64",
             Platform::OsxUniversal => "universal",
             Platform::WindowsX86_64 => "x86-64",
@@ -143,10 +147,18 @@ impl Platform {
     }
 
     pub fn from_rust_target(rust_target: &str) -> Option<Self> {
+
         match rust_target {
             "arm-unknown-linux-gnueabi" => Some(Self::LinuxAthena), // the roborio
             "arm-unknown-linux-gnueabihf" => Some(Self::LinuxArm32), // old and stinky coprocessors
-            "aarch64-unknown-linux-gnu" => Some(Self::LinuxArm64), // useful coprocessors
+            "aarch64-unknown-linux-gnu" => {
+                // man i miss how the roborio did this
+                if std::env::var_os("WPIHAL_COMPILE_FOR_COPROCESSOR") == Some(OsStr::new("1").to_os_string()) {
+                    Some(Self::LinuxArm64)
+                } else {
+                    Some(Self::LinuxSystemCore)
+                }
+            }
             "x86_64-unknown-linux-gnu" => Some(Self::LinuxX86_64), // the linux desktop. or a beelink
             "x86_64-apple-darwin" => Some(Self::OsxUniversal), // intel macs
             "aarch64-apple-darwin" => Some(Self::OsxUniversal), // actually good macs
@@ -163,13 +175,14 @@ impl Platform {
 pub enum ReleaseTrain {
     Development,
     Release,
+    Release2027,
 }
 
 pub fn get_local_maven(release_train: ReleaseTrain) -> MavenRepo {
     let user_home = home::home_dir().unwrap_or_default().to_string_lossy().to_string();
     match release_train {
         ReleaseTrain::Development => MavenRepo(format!("file:{user_home}/releases/maven/development")),
-        ReleaseTrain::Release => MavenRepo(format!("file:{user_home}/releases/maven/release")),
+        ReleaseTrain::Release | ReleaseTrain::Release2027 => MavenRepo(format!("file:{user_home}/releases/maven/release")),
     }
 }
 
@@ -178,6 +191,7 @@ pub fn get_remote_maven(release_train: ReleaseTrain) -> MavenRepo {
     match release_train {
         ReleaseTrain::Development => MavenRepo(format!("{REMOTE_BASE}/development")),
         ReleaseTrain::Release => MavenRepo(format!("{REMOTE_BASE}/release")),
+        ReleaseTrain::Release2027 => MavenRepo(format!("{REMOTE_BASE}/release-2027")),
     }
 }
 

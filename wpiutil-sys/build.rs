@@ -16,9 +16,9 @@ static OUT_DIR: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from(std::env::var
 
 pub fn main() {
 
-    let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release);
+    let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release2027);
     let wpilib_maven = wpilib_nativeutils::get_wpilib_maven(&YEAR.as_str());
-    let remote_maven = wpilib_nativeutils::get_remote_maven(ReleaseTrain::Release);
+    let remote_maven = wpilib_nativeutils::get_remote_maven(ReleaseTrain::Release2027);
     let repos = [local_maven, wpilib_maven, remote_maven];
     let buildlibs = OUT_DIR.join("buildlibs");
     let headers = buildlibs.join("headers");

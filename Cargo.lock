@@ -100,7 +100,27 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "rustc-hash",
+ "rustc-hash 1.1.0",
+ "shlex",
+ "syn",
+]
+
+[[package]]
+name = "bindgen"
+version = "0.72.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f72209734318d0b619a5e0f5129918b848c416e122a3c4ce054e03cb87b726f"
+dependencies = [
+ "bitflags",
+ "cexpr",
+ "clang-sys",
+ "itertools",
+ "log",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash 2.1.1",
  "shlex",
  "syn",
 ]
@@ -1239,6 +1259,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
+name = "rustc-hash"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
+
+[[package]]
 name = "rustix"
 version = "0.38.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1891,7 +1917,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "wpihal"
-version = "0.2025.3"
+version = "0.2027.0-0-alpha-1"
 dependencies = [
  "wpihal-sys",
  "wpiutil",
@@ -1899,16 +1925,16 @@ dependencies = [
 
 [[package]]
 name = "wpihal-sys"
-version = "2025.2.1"
+version = "2027.0.0-alpha-1"
 dependencies = [
- "bindgen",
+ "bindgen 0.70.1",
  "regex",
  "wpilib-nativeutils",
 ]
 
 [[package]]
 name = "wpilib-nativeutils"
-version = "0.2025.3"
+version = "0.2027.0-0-alpha-1"
 dependencies = [
  "anyhow",
  "home",
@@ -1918,7 +1944,7 @@ dependencies = [
 
 [[package]]
 name = "wpilib-nativeutils-tester"
-version = "0.2025.3"
+version = "0.2027.0-0-alpha-1"
 dependencies = [
  "regex",
  "wpilib-nativeutils",
@@ -1926,16 +1952,16 @@ dependencies = [
 
 [[package]]
 name = "wpiutil"
-version = "0.2025.3"
+version = "0.2027.0-0-alpha-1"
 dependencies = [
  "wpiutil-sys",
 ]
 
 [[package]]
 name = "wpiutil-sys"
-version = "2025.3.2"
+version = "2027.0.0-alpha-1"
 dependencies = [
- "bindgen",
+ "bindgen 0.72.0",
  "regex",
  "wpilib-nativeutils",
 ]
