@@ -5,7 +5,7 @@ version = "2027.0.0-alpha-1"
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-edition = "2021"
+edition = "2024"
 
 [features]
 default = ["shared"]

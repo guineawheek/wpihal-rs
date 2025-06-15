@@ -6,7 +6,7 @@ members = [
     "wpiutil",
     "wpiutil-sys",
     "build-test"
-]
+, "ntcore-sys"]
 package.version = "0.2027.0-0-alpha-1"
 package.license = "MIT OR Apache-2.0"
 package.authors = ["guineawheek <guineawheek@gmail.com>"]
@@ -19,7 +19,7 @@ version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 wpihal-sys = { path = "./wpihal-sys" }

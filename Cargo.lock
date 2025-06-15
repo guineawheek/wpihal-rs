@@ -987,6 +987,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ntcore-sys"
+version = "0.2027.0-0-alpha-1"
+
+[[package]]
 name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
