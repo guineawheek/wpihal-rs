@@ -62,3 +62,13 @@
 //#include "hal/simulation/SimCallbackRegistry.h"
 //#include "hal/simulation/SimDataValue.h"
 #include "hal/simulation/SimDeviceData.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+// This is a really stupid hack but I don't really want to pull in all of ntcore just for this one fn.
+unsigned int HAL_GetSystemServerHandle(void);
+
+#ifdef __cplusplus
+}
+#endif

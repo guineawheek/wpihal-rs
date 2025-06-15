@@ -5,8 +5,9 @@ members = [
     "wpihal-sys",
     "wpiutil",
     "wpiutil-sys",
-    "build-test"
-, "ntcore-sys"]
+    "build-test",
+    "ntcore-sys"
+]
 package.version = "0.2027.0-0-alpha-1"
 package.license = "MIT OR Apache-2.0"
 package.authors = ["guineawheek <guineawheek@gmail.com>"]

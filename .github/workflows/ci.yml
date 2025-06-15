@@ -9,13 +9,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - container: wpilib/roborio-cross-ubuntu:2025-22.04
-            artifact-name: Athena
-            target: "arm-unknown-linux-gnueabi"
-          - container: wpilib/raspbian-cross-ubuntu:bookworm-22.04
+          - container: wpilib/systemcore-cross-ubuntu:2025-24.04
+            artifact-name: SystemCore
+            target: "aarch64-unknown-linux-gnu"
+          - container: wpilib/raspbian-cross-ubuntu:bookworm-24.04
             artifact-name: Arm32
             target: "arm-unknown-linux-gnueabihf"
-          - container: wpilib/aarch64-cross-ubuntu:bookworm-22.04
+          - container: wpilib/aarch64-cross-ubuntu:bookworm-24.04
             artifact-name: Arm64
             target: "aarch64-unknown-linux-gnu"
           - container: wpilib/ubuntu-base:22.04

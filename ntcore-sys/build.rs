@@ -23,26 +23,18 @@ pub fn main() {
     let buildlibs = OUT_DIR.join("buildlibs");
     let headers = buildlibs.join("headers");
 
-    let cache_marker = buildlibs.join(format!(".nativeutils_downloaded_edu.wpi.first.hal.hal-cpp-{}", VERSION.as_str()));
+    let cache_marker = buildlibs.join(format!(".nativeutils_downloaded_edu.wpi.first.ntcore.ntcore-cpp-{}", VERSION.as_str()));
     let generate_usage_reporting = !cache_marker.exists();
 
-    wpilib_nativeutils::download_native_library_artifacts(&repos, *PLATFORM, "edu.wpi.first.hal", "hal-cpp", &VERSION, &buildlibs).unwrap();
     wpilib_nativeutils::download_native_library_artifacts(&repos, *PLATFORM, "edu.wpi.first.wpiutil", "wpiutil-cpp", &VERSION, &buildlibs).unwrap();
+    wpilib_nativeutils::download_native_library_artifacts(&repos, *PLATFORM, "edu.wpi.first.ntcore", "ntcore-cpp", &VERSION, &buildlibs).unwrap();
 
-    if generate_usage_reporting {
-        // usage reporting doesn't exist in 2027
-        //create_usage_reporting(
-        //    &OUT_DIR.join("buildlibs/headers/hal/FRCUsageReporting.h"),
-        //    &OUT_DIR.join("usage_reporting.rs")
-        //);
-    }
-    println!("cargo:rerun-if-changed=HALInclude.h");
+    println!("cargo:rerun-if-changed=NTInclude.h");
     wpilib_nativeutils::rustc_link_search(&buildlibs, *PLATFORM, SHARED, *DEBUG);
-    wpilib_nativeutils::rustc_debug_switch(&["wpiHal", "wpiutil"], *DEBUG);
+    wpilib_nativeutils::rustc_debug_switch(&["ntcore", "wpiutil"], *DEBUG);
     generate_bindings_for_header(
         bindgen::Builder::default(),
-        "HALInclude.h", r"(HAL_|WPI_|HALSIM_)\w+", "hal_bindings.rs");
-    generate_bindings_for_header(bindgen::Builder::default(), headers.join("hal/Errors.h").as_os_str().to_str().unwrap(), ".*", "error_bindings.rs");
+        "NTInclude.h", r"(HAL_|WPI_|NT_)\w+", "bindings.rs");
 }
 
 fn generate_bindings_for_header(builder: bindgen::Builder, header: &str, regex: &str, output: &str) {
@@ -112,50 +104,4 @@ impl ParseCallbacks for WPIHalCallbacks {
             Some(original_variant_name.strip_prefix(prefix).unwrap().to_string())
         }
     }
-}
-pub struct ResourceEnumBuilder {
-    name: String,
-    variants: BTreeMap<String, i32>
-}
-
-impl ResourceEnumBuilder {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: name.to_string(),
-            variants: Default::default(),
-        }
-    }
-    pub fn generate_enum(&self) -> String {
-        let mut s = format!("#[derive(Debug, Copy, Clone, PartialEq, Eq)]\n#[repr(i32)]\npub enum {} {{\n", self.name);
-        let mut variants: Vec<(&String, &i32)> = self.variants.iter().collect();
-        variants.sort_by(|(_, v1), (_, v2)| { v1.cmp(v2) });
-        for (k, v) in variants {
-            s.push_str(format!("    k{k} = {v},\n").as_str());
-        }
-        s.push_str("}\n");
-        s
-    }
-}
-
-fn create_usage_reporting(header: &PathBuf, output: &PathBuf) {
-    let file = std::fs::read_to_string(header).unwrap();
-    let re = regex::Regex::new(r"\s+k([a-zA-Z0-9]+)_([a-zA-Z0-9_]+) = ([0-9]+),").unwrap();
-    let mut enum_ents: BTreeMap<&str, ResourceEnumBuilder> = Default::default();
-
-    for (_, [enum_name, enum_var, value]) in re.captures_iter(file.as_str()).map(|cap| cap.extract()) {
-        if !enum_ents.contains_key(enum_name) {
-            enum_ents.insert(enum_name, ResourceEnumBuilder::new(enum_name));
-        }
-        let ent = enum_ents.get_mut(enum_name).unwrap();
-
-        ent.variants.insert(enum_var.to_string(), value.parse::<i32>().unwrap());
-    }
-
-    let mut usage_module = String::new();
-
-    for ent in enum_ents.values() {
-        usage_module.push_str(&ent.generate_enum());
-    }
-
-    std::fs::write(output, usage_module).unwrap();
 }

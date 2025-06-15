@@ -2,7 +2,7 @@
 
 use std::{collections::BTreeMap, path::{Path, PathBuf}, sync::LazyLock};
 
-use bindgen::callbacks::ParseCallbacks;
+use bindgen::{callbacks::ParseCallbacks, RustTarget};
 use wpilib_nativeutils::{stringify_path, Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain};
 
 static VERSION: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
@@ -44,6 +44,7 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
     wpilib_nativeutils::add_sysroot_to_clang_args(&mut clang_args, *PLATFORM, &YEAR).unwrap();
 
   let bindings = builder
+    .rust_target(RustTarget::stable(85, 0).unwrap())
     .header("UtilInclude.h")
     .derive_default(true)
     .clang_arg(format!("-I{}", wpilib_nativeutils::stringify_path(&OUT_DIR.join("buildlibs/headers"))))
