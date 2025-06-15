@@ -72,7 +72,7 @@ impl SPI {
         self.0
     }
 
-    pub fn spi_auto(&self, buffer_size: i32) -> HALResult<SPIAuto> {
+    pub fn spi_auto(&'_ self, buffer_size: i32) -> HALResult<SPIAuto<'_>> {
         hal_call!(HAL_InitSPIAuto(self.0, buffer_size))?;
         Ok(SPIAuto(self))
     }

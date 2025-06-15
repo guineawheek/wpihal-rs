@@ -64,7 +64,7 @@ impl HALError {
     /// In traditional WPILib, this would be printed to the driver
     /// station whenever an error occured. The resulting string may
     /// not be valid UTF-8.
-    pub fn message(&self) -> Cow<str> {
+    pub fn message(&'_ self) -> Cow<'_, str> {
         let const_char_ptr = unsafe { HAL_GetErrorMessage(self.0) };
         let c_str = unsafe { CStr::from_ptr(const_char_ptr) };
         c_str.to_string_lossy()
