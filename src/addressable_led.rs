@@ -10,6 +10,10 @@ use crate::{Handle, dio::DIO, error::HALResult, hal_call};
 pub const ADDRESSABLE_LED_MAX_LENGTH: u32 = wpihal_sys::HAL_kAddressableLEDMaxLength;
 
 pub type AddressableLEDData = HAL_AddressableLEDData;
+
+/// Addressable LEDs.
+///
+/// Underlying impl is NOT thread-safe.
 #[derive(Debug, PartialEq, Eq)]
 pub struct AddressableLED<'a>(HAL_AddressableLEDHandle, &'a DIO);
 impl<'a> AddressableLED<'a> {

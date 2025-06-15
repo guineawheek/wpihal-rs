@@ -122,7 +122,7 @@ impl CAN {
         ))
     }
 
-    pub fn write_rtr(&self, message: &CANMessag) -> HALResult<()> {
+    pub fn write_rtr(&self, message: &CANMessage) -> HALResult<()> {
         hal_call!(HAL_WriteCANRTRFrame(
             self.0,
             message.api_id as i32,

@@ -34,11 +34,13 @@ pub struct PowerDistribution(HAL_PowerDistributionHandle);
 
 impl PowerDistribution {
     pub fn initialize(
+        bus_id: i32,
         module_number: i32,
         pd_type: PowerDistributionType,
         allocation_location: Option<&CStr>,
     ) -> HALResult<PowerDistribution> {
         Ok(Self(hal_call!(HAL_InitializePowerDistribution(
+            bus_id,
             module_number,
             pd_type,
             allocation_location_ptr(allocation_location),

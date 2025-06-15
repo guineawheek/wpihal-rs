@@ -1,9 +1,9 @@
 use wpihal_sys::{
-    HAL_AllianceStationID, HAL_ControlWord, HAL_GetAllianceStation, HAL_GetControlWord,
-    HAL_GetJoystickAxes, HAL_GetJoystickAxisType, HAL_GetJoystickDescriptor, HAL_GetJoystickIsXbox,
-    HAL_GetJoystickName, HAL_GetJoystickPOVs, HAL_GetJoystickType, HAL_GetMatchInfo,
-    HAL_GetMatchTime, HAL_GetOutputsEnabled, HAL_JoystickAxes, HAL_JoystickButtons,
-    HAL_JoystickDescriptor, HAL_JoystickPOVs, HAL_MatchInfo, HAL_MatchType,
+    HAL_AllianceStationID, HAL_ControlWord, HAL_GetAllJoystickData, HAL_GetAllianceStation,
+    HAL_GetControlWord, HAL_GetJoystickAxes, HAL_GetJoystickAxisType, HAL_GetJoystickDescriptor,
+    HAL_GetJoystickIsGamepad, HAL_GetJoystickName, HAL_GetJoystickPOVs, HAL_GetJoystickType,
+    HAL_GetMatchInfo, HAL_GetMatchTime, HAL_GetOutputsEnabled, HAL_JoystickAxes,
+    HAL_JoystickButtons, HAL_JoystickDescriptor, HAL_JoystickPOVs, HAL_MatchInfo, HAL_MatchType,
     HAL_ObserveUserProgramAutonomous, HAL_ObserveUserProgramDisabled,
     HAL_ObserveUserProgramStarting, HAL_ObserveUserProgramTeleop, HAL_ObserveUserProgramTest,
     HAL_RefreshDSData, HAL_SetJoystickOutputs, WPI_String,
@@ -92,6 +92,16 @@ pub fn get_joystick_buttons(joystick_num: i32) -> HALResult<JoystickPOVs> {
     }
 }
 
+pub fn get_all_joystick_data() -> (JoystickAxes, JoystickPOVs, JoystickButtons) {
+    let mut axes = JoystickAxes::default();
+    let mut povs = JoystickPOVs::default();
+    let mut buttons = JoystickButtons::default();
+    unsafe {
+        HAL_GetAllJoystickData(&mut axes, &mut povs, &mut buttons);
+    }
+    (axes, povs, buttons)
+}
+
 pub fn get_joystick_descriptor(joystick_num: i32) -> HALResult<JoystickDescriptor> {
     unsafe {
         let mut desc: HAL_JoystickDescriptor = core::mem::zeroed();
@@ -102,8 +112,8 @@ pub fn get_joystick_descriptor(joystick_num: i32) -> HALResult<JoystickDescripto
     }
 }
 
-pub fn get_joystick_is_xbox(joystick_num: i32) -> bool {
-    unsafe { HAL_GetJoystickIsXbox(joystick_num) != 0 }
+pub fn get_joystick_is_gamepad(joystick_num: i32) -> bool {
+    unsafe { HAL_GetJoystickIsGamepad(joystick_num) != 0 }
 }
 
 pub fn get_joystick_type(joystick_num: i32) -> i32 {

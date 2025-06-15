@@ -21,8 +21,13 @@ use crate::{
 pub struct CTREPCM(HAL_CTREPCMHandle);
 
 impl CTREPCM {
-    pub fn initialize(module: i32, allocation_location: Option<&CStr>) -> HALResult<Self> {
+    pub fn initialize(
+        bus_id: i32,
+        module: i32,
+        allocation_location: Option<&CStr>,
+    ) -> HALResult<Self> {
         Ok(Self(hal_call!(HAL_InitializeCTREPCM(
+            bus_id,
             module,
             allocation_location_ptr(allocation_location)
         ))?))

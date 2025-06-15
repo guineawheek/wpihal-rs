@@ -4,34 +4,32 @@ use wpihal_sys::{
     HAL_GetEncoderDistance, HAL_GetEncoderDistancePerPulse, HAL_GetEncoderEncodingScale,
     HAL_GetEncoderEncodingType, HAL_GetEncoderFPGAIndex, HAL_GetEncoderPeriod, HAL_GetEncoderRate,
     HAL_GetEncoderRaw, HAL_GetEncoderStopped, HAL_InitializeEncoder, HAL_ResetEncoder,
-    HAL_SetEncoderDistancePerPulse, HAL_SetEncoderIndexSource, HAL_SetEncoderMaxPeriod,
-    HAL_SetEncoderMinRate, HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice,
+    HAL_SetEncoderDistancePerPulse, HAL_SetEncoderMaxPeriod, HAL_SetEncoderMinRate,
+    HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice,
 };
 
-use crate::{dio::DigitalSource, error::HALResult, hal_call, sim_device::SimDevice};
+use crate::{error::HALResult, hal_call, sim_device::SimDevice};
 
 pub type IndexingType = HAL_EncoderIndexingType;
 pub type EncodingType = HAL_EncoderEncodingType;
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Encoder<'a> {
+pub struct Encoder {
     handle: HAL_EncoderHandle,
-    a_channel: DigitalSource<'a>,
-    b_channel: DigitalSource<'a>,
+    a_channel: i32,
+    b_channel: i32,
 }
 
-impl<'a> Encoder<'a> {
+impl<'a> Encoder {
     pub fn initialize(
-        a_channel: DigitalSource<'a>,
-        b_channel: DigitalSource<'a>,
+        a_channel: i32,
+        b_channel: i32,
         reverse_dir: bool,
         encoding: EncodingType,
     ) -> HALResult<Self> {
         let handle = hal_call!(HAL_InitializeEncoder(
-            a_channel.raw_handle(),
-            a_channel.analog_trigger_type(),
-            b_channel.raw_handle(),
-            b_channel.analog_trigger_type(),
+            a_channel,
+            b_channel,
             reverse_dir as i32,
             encoding
         ))?;
@@ -114,19 +112,6 @@ impl<'a> Encoder<'a> {
         ))
     }
 
-    pub fn set_index_source(
-        &mut self,
-        index_pin: DigitalSource<'a>,
-        indexing_type: IndexingType,
-    ) -> HALResult<()> {
-        hal_call!(HAL_SetEncoderIndexSource(
-            self.handle,
-            index_pin.raw_handle(),
-            index_pin.analog_trigger_type(),
-            indexing_type
-        ))
-    }
-
     pub fn get_fpga_index(&self) -> HALResult<i32> {
         hal_call!(HAL_GetEncoderFPGAIndex(self.handle))
     }
@@ -148,7 +133,7 @@ impl<'a> Encoder<'a> {
     }
 }
 
-impl<'a> Drop for Encoder<'a> {
+impl Drop for Encoder {
     fn drop(&mut self) {
         unsafe {
             HAL_FreeEncoder(self.handle);

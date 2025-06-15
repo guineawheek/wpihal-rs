@@ -22,6 +22,7 @@
 #include "hal/IMUTypes.h"
 #include "hal/Main.h"
 #include "hal/Notifier.h"
+#include "hal/PWM.h"
 #include "hal/Ports.h"
 #include "hal/Power.h"
 #include "hal/PowerDistribution.h"

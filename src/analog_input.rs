@@ -30,10 +30,6 @@ impl AnalogInput {
         ))?))
     }
 
-    pub fn is_accumulator_channel(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_IsAccumulatorChannel(self.0))? != 0)
-    }
-
     /// Sets the sim device
     pub fn set_sim_device(&mut self, handle: &SimDevice) {
         unsafe {

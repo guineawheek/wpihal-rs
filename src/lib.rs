@@ -6,10 +6,9 @@ use std::{
 use error::{HALError, HALResult};
 use wpihal_sys::{
     HAL_ExpandFPGATime, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount,
-    HAL_GetFPGAButton, HAL_GetFPGATime, HAL_GetFPGAVersion, HAL_GetLastError, HAL_GetPort,
-    HAL_GetPortWithModule, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber,
-    HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond, HAL_GetSystemTimeValid,
-    HAL_GetTeamNumber, HAL_Initialize, HAL_PortHandle, HAL_RuntimeType, HAL_Shutdown,
+    HAL_GetFPGATime, HAL_GetFPGAVersion, HAL_GetLastError, HAL_GetRSLState, HAL_GetRuntimeType,
+    HAL_GetSerialNumber, HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond,
+    HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize, HAL_RuntimeType, HAL_Shutdown,
     HAL_SimPeriodicAfter, HAL_SimPeriodicBefore, WPI_String,
 };
 use wpiutil::wpistring::WPIString;
@@ -31,8 +30,6 @@ pub mod counter;
 pub mod ctre_pcm;
 /// digital i/o
 pub mod dio;
-/// DMA
-pub mod dma;
 /// driver station data
 pub mod driver_station;
 /// duty cycle input
@@ -43,10 +40,6 @@ pub mod encoder;
 pub mod extensions;
 /// I2C transactions (may freeze your rio)
 pub mod i2c;
-/// interrupts
-pub mod interrupts;
-/// Radio leds
-pub mod leds;
 /// main loop management
 pub mod main_loop;
 /// notifiers
@@ -59,16 +52,12 @@ pub mod power;
 pub mod power_distribution;
 /// PWM output
 pub mod pwm;
-/// relays
-pub mod relay;
 /// rev pneumatic hub
 pub mod rev_ph;
 /// serial ports
 pub mod serial_port;
 /// simdevice
 pub mod sim_device;
-/// SPI
-pub mod spi;
 /// Threads
 pub mod threads;
 /// usage reporting
@@ -167,10 +156,6 @@ pub fn get_runtime_type() -> HAL_RuntimeType {
     unsafe { HAL_GetRuntimeType() }
 }
 
-pub fn get_fpga_button() -> HALResult<bool> {
-    Ok(hal_call!(HAL_GetFPGAButton())? != 0)
-}
-
 pub fn get_system_active() -> HALResult<bool> {
     Ok(hal_call!(HAL_GetSystemActive())? != 0)
 }
@@ -181,14 +166,6 @@ pub fn get_browned_out() -> HALResult<bool> {
 
 pub fn get_comms_disable_count() -> HALResult<i32> {
     hal_call!(HAL_GetCommsDisableCount())
-}
-
-pub fn get_port(channel: i32) -> HAL_PortHandle {
-    unsafe { HAL_GetPort(channel) }
-}
-
-pub fn get_port_with_module(module: i32, channel: i32) -> HAL_PortHandle {
-    unsafe { HAL_GetPortWithModule(module, channel) }
 }
 
 pub fn get_fpga_time() -> HALResult<u64> {

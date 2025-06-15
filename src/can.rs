@@ -1,7 +1,8 @@
 use wpihal_sys::{
     HAL_CAN_CloseStreamSession, HAL_CAN_GetCANStatus, HAL_CAN_OpenStreamSession,
     HAL_CAN_ReadStreamSession, HAL_CAN_ReceiveMessage, HAL_CAN_SEND_PERIOD_NO_REPEAT,
-    HAL_CAN_SEND_PERIOD_STOP_REPEATING, HAL_CAN_SendMessage, HAL_CANStreamMessage,
+    HAL_CAN_SEND_PERIOD_STOP_REPEATING, HAL_CAN_SendMessage, HAL_CANMessage, HAL_CANReceiveMessage,
+    HAL_CANStreamMessage,
 };
 
 use crate::{error::HALResult, hal_call};
@@ -22,26 +23,28 @@ pub struct CANStatus {
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct StreamSession {
-    handle: u32,
-    capacity: u32,
+    pub handle: i32,
+    pub capacity: u32,
+    pub bus_id: i32,
 }
 
 impl StreamSession {
     pub fn open(
+        bus_id: i32,
         message_id: u32,
         message_id_mask: u32,
         max_messages: u32,
     ) -> HALResult<StreamSession> {
-        let mut session_handle = 0_u32;
-        hal_call!(HAL_CAN_OpenStreamSession(
-            &mut session_handle,
+        let handle = hal_call!(HAL_CAN_OpenStreamSession(
+            bus_id,
             message_id,
             message_id_mask,
             max_messages
         ))?;
         Ok(StreamSession {
-            handle: session_handle,
+            handle: handle,
             capacity: max_messages,
+            bus_id,
         })
     }
 
@@ -58,34 +61,35 @@ impl StreamSession {
     }
 }
 
-pub fn send_message(message_id: u32, data: &[u8], period_ms: i32) -> HALResult<()> {
-    let size = data.len().min(8) as u8;
+impl Drop for StreamSession {
+    fn drop(&mut self) {
+        unsafe {
+            HAL_CAN_CloseStreamSession(self.handle);
+        }
+    }
+}
+
+pub fn send_message(
+    bus_id: i32,
+    message_id: u32,
+    msg: &HAL_CANMessage,
+    period_ms: i32,
+) -> HALResult<()> {
     hal_call!(HAL_CAN_SendMessage(
+        bus_id,
         message_id,
-        data.as_ptr(),
-        size,
+        msg as *const HAL_CANMessage,
         period_ms
     ))
 }
 
-pub fn receive_message(message_id_mask: u32) -> HALResult<CANStreamMessage> {
-    let mut msg = CANStreamMessage {
-        messageID: 0,
-        timeStamp: 0,
-        data: [0u8; 8],
-        dataSize: 0,
-    };
-    hal_call!(HAL_CAN_ReceiveMessage(
-        &mut msg.messageID,
-        message_id_mask,
-        msg.data.as_mut_ptr(),
-        &mut msg.dataSize,
-        &mut msg.timeStamp
-    ))?;
+pub fn receive_message(bus_id: i32, message_id: u32) -> HALResult<HAL_CANReceiveMessage> {
+    let mut msg = HAL_CANReceiveMessage::default();
+    hal_call!(HAL_CAN_ReceiveMessage(bus_id, message_id, &mut msg))?;
     Ok(msg)
 }
 
-pub fn get_can_status() -> HALResult<CANStatus> {
+pub fn get_can_status(bus_id: i32) -> HALResult<CANStatus> {
     let mut can_status = CANStatus {
         percent_bus_utilization: 0_f32,
         bus_off_count: 0,
@@ -94,6 +98,7 @@ pub fn get_can_status() -> HALResult<CANStatus> {
         transmit_error_count: 0,
     };
     hal_call!(HAL_CAN_GetCANStatus(
+        bus_id,
         &mut can_status.percent_bus_utilization,
         &mut can_status.bus_off_count,
         &mut can_status.tx_full_count,
@@ -101,12 +106,4 @@ pub fn get_can_status() -> HALResult<CANStatus> {
         &mut can_status.transmit_error_count
     ))?;
     Ok(can_status)
-}
-
-impl Drop for StreamSession {
-    fn drop(&mut self) {
-        unsafe {
-            HAL_CAN_CloseStreamSession(self.handle);
-        }
-    }
 }

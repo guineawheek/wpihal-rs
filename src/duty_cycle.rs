@@ -1,3 +1,5 @@
+use std::ffi::CStr;
+
 use wpihal_sys::{
     HAL_DutyCycleHandle, HAL_FreeDutyCycle, HAL_GetDutyCycleFPGAIndex, HAL_GetDutyCycleFrequency,
     HAL_GetDutyCycleHighTime, HAL_GetDutyCycleOutput, HAL_GetDutyCycleOutputScaleFactor,
@@ -6,47 +8,24 @@ use wpihal_sys::{
 
 use crate::{
     Handle,
-    analog_trigger::{AnalogTrigger, AnalogTriggerType},
-    dio::DIO,
-    error::HALResult,
+    error::{HALResult, allocation_location_ptr},
     hal_call,
     sim_device::SimDevice,
 };
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct DutyCycle<'a> {
+pub struct DutyCycle {
     handle: HAL_DutyCycleHandle,
-    src: DutyCycleSource<'a>,
+    channel: i32,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum DutyCycleSource<'a> {
-    Unknown,
-    DigitalHandle(&'a DIO),
-    AnalogTriggerHandle(&'a AnalogTrigger<'a>),
-}
-
-impl<'a> DutyCycle<'a> {
-    pub fn initialize_from_dio(dio: &'a DIO) -> HALResult<Self> {
+impl DutyCycle {
+    pub fn initialize(channel: i32, allocation_location: Option<&CStr>) -> HALResult<Self> {
         let handle = hal_call!(HAL_InitializeDutyCycle(
-            dio.raw_handle(),
-            AnalogTriggerType::kInWindow
+            channel,
+            allocation_location_ptr(allocation_location)
         ))?;
-        Ok(Self {
-            handle,
-            src: DutyCycleSource::DigitalHandle(dio),
-        })
-    }
-
-    pub fn initialize_from_analog_trigger(
-        trg: &'a AnalogTrigger<'a>,
-        trg_type: AnalogTriggerType,
-    ) -> HALResult<Self> {
-        let handle = hal_call!(HAL_InitializeDutyCycle(trg.raw_handle(), trg_type))?;
-        Ok(Self {
-            handle,
-            src: DutyCycleSource::AnalogTriggerHandle(trg),
-        })
+        Ok(Self { handle, channel })
     }
 
     pub fn set_sim_device(&mut self, handle: &SimDevice) {
@@ -76,7 +55,7 @@ impl<'a> DutyCycle<'a> {
     }
 }
 
-impl<'a> Drop for DutyCycle<'a> {
+impl Drop for DutyCycle {
     fn drop(&mut self) {
         unsafe {
             HAL_FreeDutyCycle(self.handle);
@@ -84,7 +63,7 @@ impl<'a> Drop for DutyCycle<'a> {
     }
 }
 
-impl<'a> Handle<HAL_DutyCycleHandle> for DutyCycle<'a> {
+impl Handle<HAL_DutyCycleHandle> for DutyCycle {
     unsafe fn raw_handle(&self) -> HAL_DutyCycleHandle {
         self.handle
     }
@@ -92,7 +71,7 @@ impl<'a> Handle<HAL_DutyCycleHandle> for DutyCycle<'a> {
     unsafe fn from_raw_handle(handle: HAL_DutyCycleHandle) -> Self {
         Self {
             handle,
-            src: DutyCycleSource::Unknown,
+            channel: -1,
         }
     }
 }

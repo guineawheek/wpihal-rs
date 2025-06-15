@@ -52,8 +52,11 @@ Actual achievements of these aims is not certain and there are almost certainly 
  * to be fair, it's for similar reasons as gradle as it's bottlenecked on unzipping artifacts
 
 ## Things that could use some work
+
 * Testing on real hardware
 * Better guards against WPILib's overuse of `i32`s for things that are NOT i32 sized
 * macro-ized halsim wrapers
 * Versioning this in both the semver sense and the wpilib sense they are inconsistent with each other
-* depend on NTCore
+* NTCore support
+* Be more specific about usage of `&mut self` vs `&self` on wrapper types depending on if the underlying HAL impl is thread-safe (which implies `Send`/`Sync`)
+* `WPI_EventHandle` support (and `HAL_ProvideNewDataEventHandle` and friends)

@@ -33,8 +33,13 @@ pub enum ClosedLoopControlMode {
 pub struct REVPH(HAL_REVPHHandle);
 
 impl REVPH {
-    pub fn initialize(module: i32, allocation_location: Option<&CStr>) -> HALResult<Self> {
+    pub fn initialize(
+        bus_id: i32,
+        module: i32,
+        allocation_location: Option<&CStr>,
+    ) -> HALResult<Self> {
         Ok(Self(hal_call!(HAL_InitializeREVPH(
+            bus_id,
             module,
             allocation_location_ptr(allocation_location)
         ))?))
