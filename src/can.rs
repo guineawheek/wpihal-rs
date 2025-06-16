@@ -1,6 +1,6 @@
 use wpihal_sys::{HAL_CANStreamMessage, HAL_CAN_CloseStreamSession, HAL_CAN_GetCANStatus, HAL_CAN_OpenStreamSession, HAL_CAN_ReadStreamSession, HAL_CAN_ReceiveMessage, HAL_CAN_SendMessage, HAL_CAN_SEND_PERIOD_NO_REPEAT, HAL_CAN_SEND_PERIOD_STOP_REPEATING};
 
-use crate::{error::HALResult, hal_call};
+use crate::{error::{HALError, HALResult}, hal_call};
 
 pub type CANStreamMessage = HAL_CANStreamMessage;
 pub const SEND_PERIOD_NO_REPEAT: i32 = HAL_CAN_SEND_PERIOD_NO_REPEAT as i32;
@@ -32,11 +32,22 @@ impl StreamSession {
         })
     }
 
-    pub fn read_into(&self, messages: &mut [CANStreamMessage]) -> HALResult<usize> {
+    pub fn read_into(&self, messages: &mut [CANStreamMessage]) -> (usize, Option<HALError>) {
         let mut messages_read = 0_u32;
         let max_msg = messages.len().min(self.capacity as usize) as u32;
-        hal_call!(HAL_CAN_ReadStreamSession(self.handle, messages.as_mut_ptr(), max_msg, &mut messages_read))?;
-        Ok(messages_read as usize)
+        let mut status = 0;
+        unsafe {
+            HAL_CAN_ReadStreamSession(self.handle, messages.as_mut_ptr(), max_msg, &mut messages_read, &mut status)
+        };
+        (
+            messages_read as usize,
+            if status == 0 {
+                None
+            } else {
+                Some(HALError::from(status))
+            }
+        )
+
     }
 }
 
