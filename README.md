@@ -17,7 +17,7 @@ I recommend pinning to a specific commit or branch.
 
 ## Compiling for coprocessors
 
-Set `WPIHAL_COMPILE_FOR_COPROCESSOR=1` in your environment variables if you want to compile for arm64 coprocs instead of SystemCore.
+Unset the `robot-controller` feature flag if you want to compile for arm64 coprocs instead of SystemCore.
 
 Otherwise arm64 is assumed to be systemcore.
 
@@ -60,3 +60,4 @@ Actual achievements of these aims is not certain and there are almost certainly 
 * NTCore support
 * Be more specific about usage of `&mut self` vs `&self` on wrapper types depending on if the underlying HAL impl is thread-safe (which implies `Send`/`Sync`)
 * `WPI_EventHandle` support (and `HAL_ProvideNewDataEventHandle` and friends)
+* CI systemcore sysroot

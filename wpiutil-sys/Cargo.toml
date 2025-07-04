@@ -8,9 +8,9 @@ repository.workspace = true
 edition = "2024"
 
 [features]
-default = ["shared"]
-static = []
+default = ["shared", "robot-controller"]
 shared = []
+robot-controller = []
 
 [build-dependencies]
 wpilib-nativeutils = { path = "../wpilib-nativeutils" }

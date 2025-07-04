@@ -8,6 +8,9 @@ authors.workspace = true
 repository.workspace = true
 
 [features]
+default = ["shared", "robot-controller"]
+shared = ["wpiutil-sys/shared"]
+robot-controller = ["wpiutil-sys/robot-controller"]
 
 [dependencies]
 wpiutil-sys = { path = "../wpiutil-sys"}

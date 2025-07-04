@@ -22,6 +22,15 @@ repository.workspace = true
 authors.workspace = true
 edition = "2024"
 
+[features]
+default = ["shared", "robot-controller"]
+# Link against the shared artifacts.
+shared = ["wpihal-sys/shared", "wpiutil/shared"]
+# Link against the artifacts relevant for the robot controller, rather than the generic
+# binaries intended for coprocessors.
+# This is primarily relevant with systemcore vs. generic aarch64.
+robot-controller = ["wpihal-sys/robot-controller", "wpiutil/robot-controller"]
+
 [dependencies]
 wpihal-sys = { path = "./wpihal-sys" }
 wpiutil = { path = "./wpiutil"}

@@ -1,5 +1,4 @@
 use std::{
-    ffi::OsStr,
     fmt::Display,
     io::Cursor,
     path::{Path, PathBuf},
@@ -66,7 +65,10 @@ pub enum NativeUtilsError {
 
 impl Display for NativeUtilsError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("error ig")
+        match self {
+            Self::UnsupportedURI => write!(f, "Unsupported URI"),
+            Self::InvalidPlatform => write!(f, "Invalid platform"),
+        }
     }
 }
 impl std::error::Error for NativeUtilsError {}
@@ -164,18 +166,17 @@ impl Platform {
         }
     }
 
-    pub fn from_rust_target(rust_target: &str) -> Option<Self> {
+    pub fn from_rust_target(rust_target: &str, robot_controller: bool) -> Option<Self> {
         match rust_target {
             "arm-unknown-linux-gnueabi" => Some(Self::LinuxAthena), // the roborio
             "arm-unknown-linux-gnueabihf" => Some(Self::LinuxArm32), // old and stinky coprocessors
             "aarch64-unknown-linux-gnu" => {
                 // man i miss how the roborio did this
-                if std::env::var_os("WPIHAL_COMPILE_FOR_COPROCESSOR")
-                    == Some(OsStr::new("1").to_os_string())
-                {
-                    Some(Self::LinuxArm64)
-                } else {
+                // but i do NOT miss arm soft-float.
+                if robot_controller {
                     Some(Self::LinuxSystemCore)
+                } else {
+                    Some(Self::LinuxArm64)
                 }
             }
             "x86_64-unknown-linux-gnu" => Some(Self::LinuxX86_64), // the linux desktop. or a beelink
@@ -267,7 +268,6 @@ pub fn download_artifact_zip_to_dir(
     repos: &[MavenRepo],
     artifact: &Artifact,
 ) -> anyhow::Result<()> {
-    //let Some(platform) = Platform::from_rust_target(target) else { return Err(NativeUtilsError::InvalidPlatform.into()) };
     let dir = PathBuf::from(dir);
     let mut last_err: Option<anyhow::Error> = None;
     let mut artifact_data: Option<Vec<u8>> = None;
@@ -485,6 +485,26 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
                     .join("sysroot");
                 if user_sysroot.exists() {
                     Some(Sysroot::new(&user_sysroot, "arm-nilrt-linux-gnueabi"))
+                } else {
+                    None
+                }
+            }
+        }
+        Platform::LinuxSystemCore => {
+            // first check the local location first and then try everything else
+            const SYSTEMCORE_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
+            if Path::new(SYSTEMCORE_SYSROOT).exists() {
+                Some(Sysroot::new(
+                    Path::new(SYSTEMCORE_SYSROOT),
+                    "aarch64-linux-gnu",
+                ))
+            } else {
+                let user_sysroot = get_wpilib_root(year)
+                    .join("systemcore")
+                    .join("aarch64-linux-gnu")
+                    .join("sysroot");
+                if user_sysroot.exists() {
+                    Some(Sysroot::new(&user_sysroot, "aarch64-linux-gnu"))
                 } else {
                     None
                 }
