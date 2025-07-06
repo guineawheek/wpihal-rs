@@ -12,15 +12,15 @@ jobs:
           - container: wpilib/systemcore-cross-ubuntu:2025-24.04
             artifact-name: SystemCore
             target: "aarch64-unknown-linux-gnu"
-            features: "robot-controller"
+            flags: "--features robot-controller"
           - container: wpilib/aarch64-cross-ubuntu:bookworm-24.04
             artifact-name: Arm64
             target: "aarch64-unknown-linux-gnu"
-            features: ""
+            flags: ""
           - container: wpilib/ubuntu-base:22.04
             artifact-name: Linux
             target: "x86_64-unknown-linux-gnu"
-            features: ""
+            flags: ""
     name: "Build - ${{ matrix.artifact-name }}"
     runs-on: ubuntu-24.04
     container: ${{ matrix.container }}
@@ -39,7 +39,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
       - name: Attempt to build library
-        run: cargo build --target=${{ matrix.target }} -p build-test --features ${{ matrix.features }}
+        run: cargo build --target=${{ matrix.target }} -p build-test ${{ matrix.flags }}
 
   build-host:
     env: 
@@ -51,15 +51,15 @@ jobs:
           - os: windows-2022
             artifact-name: WinX64
             architecture: x64
-            features: ""
+            flags: ""
           - os: windows-2022
             artifact-name: WinArm64
             architecture: aarch64
-            features: ""
+            flags: ""
           - os: macos-14
             artifact-name: macOS
             architecture: aarch64
-            features: ""
+            flags: ""
           #- os: macos-14
           #  artifact-name: macOS-arm64
           #  build-options:
@@ -72,4 +72,4 @@ jobs:
           fetch-depth: 0
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Attempt to build library
-        run: cargo build -p build-test --features ${{ matrix.features }}
+        run: cargo build -p build-test ${{ matrix.flags }}
