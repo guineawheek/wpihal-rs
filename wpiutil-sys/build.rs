@@ -59,6 +59,7 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
         "-xc++".to_string(),
         "-std=c++20".to_string(),
         "-v".to_string(),
+        "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH".to_string(),
     ];
     wpilib_nativeutils::add_sysroot_to_clang_args(&mut clang_args, *PLATFORM, &YEAR).unwrap();
 
