@@ -32,5 +32,6 @@ shared = ["wpihal-sys/shared", "wpiutil/shared"]
 robot-controller = ["wpihal-sys/robot-controller", "wpiutil/robot-controller"]
 
 [dependencies]
+embedded-hal = "1.0.0"
 wpihal-sys = { path = "./wpihal-sys" }
 wpiutil = { path = "./wpiutil"}

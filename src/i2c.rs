@@ -48,3 +48,63 @@ impl Drop for I2C {
         }
     }
 }
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct I2CError(pub i32);
+impl I2CError {
+    pub fn from_code(code: i32) -> Result<(), Self> {
+        if code < 0 {
+            Err(Self(code))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl core::fmt::Display for I2CError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl embedded_hal::i2c::Error for I2CError {
+    fn kind(&self) -> embedded_hal::i2c::ErrorKind {
+        embedded_hal::i2c::ErrorKind::Other
+    }
+}
+
+impl embedded_hal::i2c::ErrorType for I2C {
+    type Error = I2CError;
+}
+
+impl embedded_hal::i2c::I2c for I2C {
+    fn transaction(
+        &mut self,
+        address: u8,
+        operations: &mut [embedded_hal::i2c::Operation<'_>],
+    ) -> Result<(), Self::Error> {
+        let mut prev_op: Option<&[u8]> = None;
+        for op in operations {
+            match (prev_op, op) {
+                (None, embedded_hal::i2c::Operation::Read(rb)) => {
+                    I2CError::from_code(self.read(address as i32, rb))?;
+                }
+                (None, embedded_hal::i2c::Operation::Write(wb)) => {
+                    prev_op = Some(wb);
+                }
+                (Some(wb), embedded_hal::i2c::Operation::Read(rb)) => {
+                    I2CError::from_code(self.transaction(address as i32, wb, rb))?;
+                    prev_op = None;
+                }
+                (Some(wb0), embedded_hal::i2c::Operation::Write(wb1)) => {
+                    I2CError::from_code(self.write(address as i32, wb0))?;
+                    prev_op = Some(wb1);
+                }
+            }
+        }
+        if let Some(wb) = prev_op {
+            I2CError::from_code(self.write(address as i32, wb))?;
+        }
+        Ok(())
+    }
+}

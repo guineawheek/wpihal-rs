@@ -111,6 +111,31 @@ impl Handle<HAL_DigitalHandle> for DIO {
     }
 }
 
+impl embedded_hal::digital::ErrorType for DIO {
+    type Error = crate::error::HALError;
+}
+
+impl embedded_hal::digital::InputPin for DIO {
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
+        self.get()
+    }
+
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
+        self.get().map(|v| !v)
+    }
+}
+
+impl embedded_hal::digital::OutputPin for DIO {
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        self.set(false)
+    }
+
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        self.set(true)
+    }
+}
+
+
 pub struct DigitalPWM(HAL_DigitalPWMHandle);
 
 impl DigitalPWM {
@@ -140,5 +165,23 @@ impl Drop for DigitalPWM {
         unsafe {
             HAL_FreeDigitalPWM(self.0);
         }
+    }
+}
+
+impl embedded_hal::pwm::ErrorType for DigitalPWM {
+    type Error = crate::error::HALError;
+}
+
+impl embedded_hal::pwm::SetDutyCycle for DigitalPWM {
+    fn max_duty_cycle(&self) -> u16 {
+        u16::MAX
+    }
+
+    fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
+        self.set_duty_cycle(duty as f64 / (u16::MAX as f64))
+    }
+
+    fn set_duty_cycle_fraction(&mut self, num: u16, denom: u16) -> Result<(), Self::Error> {
+        self.set_duty_cycle(num as f64 / denom as f64)
     }
 }
