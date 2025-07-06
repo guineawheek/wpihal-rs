@@ -3,5 +3,8 @@ name = "build-test"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+robot-controller = ["wpihal/robot-controller"]
+
 [dependencies]
-wpihal = { path = ".."}
+wpihal = { path = "..", default-features = false, features = ["shared"] }
