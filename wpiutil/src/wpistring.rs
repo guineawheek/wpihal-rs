@@ -25,6 +25,7 @@ use wpiutil_sys::{WPI_AllocateString, WPI_FreeString};
 ///   The most common is a callback either getting passed a const WPI_String* or a struct containing a WPI_String.
 ///   In both of these cases, the callback target should consider these strings read only, and not attempt to free them or manipulate them.
 #[derive(Debug)]
+#[repr(transparent)]
 pub struct WPIString(WPI_String);
 
 impl WPIString {
