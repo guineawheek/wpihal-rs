@@ -97,7 +97,6 @@ impl MavenRepo {
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Platform {
     LinuxAthena, // roborio
-    LinuxArm32, // old and stinky coprocs
     LinuxArm64, // new coprocs
     LinuxX86_64, // Intel
     OsxUniversal, // macs
@@ -109,7 +108,6 @@ impl Platform {
     pub fn platform_string(&self) -> &'static str {
         match self {
             Platform::LinuxAthena => "linuxathena",
-            Platform::LinuxArm32 => "linuxarm32",
             Platform::LinuxArm64 => "linuxarm64",
             Platform::LinuxX86_64 => "linuxx86-64",
             Platform::OsxUniversal => "osxuniversal",
@@ -121,7 +119,6 @@ impl Platform {
     pub fn operating_system(&self) -> &'static str {
         match self {
             Platform::LinuxAthena => "linux",
-            Platform::LinuxArm32 => "linux",
             Platform::LinuxArm64 => "linux",
             Platform::LinuxX86_64 => "linux",
             Platform::OsxUniversal => "osx",
@@ -133,7 +130,6 @@ impl Platform {
     pub fn architecture(&self) -> &'static str {
         match self {
             Platform::LinuxAthena => "athena",
-            Platform::LinuxArm32 => "arm32",
             Platform::LinuxArm64 => "arm64",
             Platform::LinuxX86_64 => "x86-64",
             Platform::OsxUniversal => "universal",
@@ -145,7 +141,6 @@ impl Platform {
     pub fn from_rust_target(rust_target: &str) -> Option<Self> {
         match rust_target {
             "arm-unknown-linux-gnueabi" => Some(Self::LinuxAthena), // the roborio
-            "arm-unknown-linux-gnueabihf" => Some(Self::LinuxArm32), // old and stinky coprocessors
             "aarch64-unknown-linux-gnu" => Some(Self::LinuxArm64), // useful coprocessors
             "x86_64-unknown-linux-gnu" => Some(Self::LinuxX86_64), // the linux desktop. or a beelink
             "x86_64-apple-darwin" => Some(Self::OsxUniversal), // intel macs
@@ -400,26 +395,32 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
         Platform::LinuxAthena => {
             // first check the local location first and then try everything else
             const ATHENA_SYSROOT: &str = "/usr/local/arm-nilrt-linux-gnueabi/sysroot";
-            if Path::new(ATHENA_SYSROOT).exists() {
-                Some(Sysroot::new(Path::new(ATHENA_SYSROOT), "arm-nilrt-linux-gnueabi"))
+            const ATHENA_TARGET: &str = "arm-nilrt-linux-gnueabi";
+            let user_sysroot = get_wpilib_root(year).join("roborio").join("arm-nilrt-linux-gnueabi").join("sysroot");
+            let path = if Path::new(ATHENA_SYSROOT).exists() {
+                Path::new(ATHENA_SYSROOT).into()
+            } else if user_sysroot.exists() {
+                user_sysroot
             } else {
-                let user_sysroot = get_wpilib_root(year).join("roborio").join("arm-nilrt-linux-gnueabi").join("sysroot");
-                if user_sysroot.exists() {
-                    Some(Sysroot::new(&user_sysroot, "arm-nilrt-linux-gnueabi"))
-                } else { None }
-            }
-        }
-        Platform::LinuxArm32 => {
-            const ARM32_SYSROOT: &str = "/usr/local/arm-linux-gnueabihf/sysroot";
-            if Path::new(ARM32_SYSROOT).exists() {
-                Some(Sysroot::new(Path::new(ARM32_SYSROOT), "arm-linux-gnueabihf"))
-            } else { None }
+                let gcc_path = which::which(format!("arm-frc{year}-linux-gnueabi-gcc")).ok()?;
+                let prospective = gcc_path.parent()?.join(format!("{ATHENA_TARGET}/sysroot"));
+                prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None })??
+            };
+
+            Some(Sysroot::new(&path, ATHENA_TARGET))
         }
         Platform::LinuxArm64 => {
             const ARM64_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
-            if Path::new(ARM64_SYSROOT).exists() {
-                Some(Sysroot::new(Path::new(ARM64_SYSROOT), "aarch64-linux-gnu"))
-            } else { None }
+            const ARM64_TARGET: &str = "aarch64-linux-gnu";
+            //, "aarch64-linux-gnu"))
+            let path = if Path::new(ARM64_SYSROOT).exists() {
+                Path::new(ARM64_SYSROOT).into()
+            } else { 
+                let gcc_path = which::which(format!("aarch64-bookworm-linux-gnu-gcc")).ok()?;
+                let prospective = gcc_path.parent()?.join(format!("{ARM64_TARGET}/sysroot"));
+                prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None })??
+            };
+            Some(Sysroot::new(&path, ARM64_TARGET))
         }
         _ => None
     }

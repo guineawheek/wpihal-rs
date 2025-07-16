@@ -4,9 +4,6 @@ ar = "arm-frc2025-linux-gnueabi-ar"
 rustflags = [
   "-C", "target-cpu=cortex-a9"
 ]
-[target.arm-unknown-linux-gnueabihf]
-linker = "armv6-bullseye-linux-gnueabihf-gcc"
-ar = "armv6-bullseye-linux-gnueabihf-ar"
 [target.aarch64-unknown-linux-gnu]
-linker = "aarch64-bullseye-linux-gnu-gcc"
-ar = "aarch64-bullseye-linux-gnu-ar"
+linker = "aarch64-bookworm-linux-gnu-gcc"
+ar = "aarch64-bookworm-linux-gnu-ar"

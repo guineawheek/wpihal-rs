@@ -11,4 +11,5 @@ description = "Utility to pull down Maven artifacts from the WPILib Artifactory"
 anyhow = "1.0.93"
 home = "0.5.9"
 reqwest = { version = "0.12.9", features = ["blocking", "native-tls-vendored"] }
-zip = "2.2.0"
+zip = "4.3.0"
+which = "8.0.0"
