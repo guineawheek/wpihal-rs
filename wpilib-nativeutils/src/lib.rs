@@ -396,15 +396,16 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
             // first check the local location first and then try everything else
             const ATHENA_SYSROOT: &str = "/usr/local/arm-nilrt-linux-gnueabi/sysroot";
             const ATHENA_TARGET: &str = "arm-nilrt-linux-gnueabi";
+            const EXPECT: &str = "Cannot find roboRIO sysroot!";
             let user_sysroot = get_wpilib_root(year).join("roborio").join("arm-nilrt-linux-gnueabi").join("sysroot");
             let path = if Path::new(ATHENA_SYSROOT).exists() {
                 Path::new(ATHENA_SYSROOT).into()
             } else if user_sysroot.exists() {
                 user_sysroot
             } else {
-                let gcc_path = which::which(format!("arm-frc{year}-linux-gnueabi-gcc")).ok()?;
-                let prospective = gcc_path.parent()?.join(format!("{ATHENA_TARGET}/sysroot"));
-                prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None })??
+                let gcc_path = which::which(format!("arm-frc{year}-linux-gnueabi-gcc")).ok().expect(EXPECT);
+                let prospective = gcc_path.parent().expect(EXPECT).join(format!("{ATHENA_TARGET}/sysroot"));
+                prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None }).expect(EXPECT).expect(EXPECT)
             };
 
             Some(Sysroot::new(&path, ATHENA_TARGET))
@@ -412,13 +413,14 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
         Platform::LinuxArm64 => {
             const ARM64_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
             const ARM64_TARGET: &str = "aarch64-linux-gnu";
+            const EXPECT: &str = "Cannot find arm64 sysroot!";
             //, "aarch64-linux-gnu"))
             let path = if Path::new(ARM64_SYSROOT).exists() {
                 Path::new(ARM64_SYSROOT).into()
             } else { 
-                let gcc_path = which::which(format!("aarch64-bookworm-linux-gnu-gcc")).ok()?;
-                let prospective = gcc_path.parent()?.join(format!("{ARM64_TARGET}/sysroot"));
-                prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None })??
+                let gcc_path = which::which(format!("aarch64-bookworm-linux-gnu-gcc")).ok().expect(EXPECT);
+                let prospective = gcc_path.parent().expect(EXPECT).join(format!("{ARM64_TARGET}/sysroot"));
+                prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None }).expect(EXPECT).expect(EXPECT)
             };
             Some(Sysroot::new(&path, ARM64_TARGET))
         }
