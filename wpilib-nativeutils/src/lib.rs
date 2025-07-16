@@ -404,7 +404,7 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
                 user_sysroot
             } else {
                 let gcc_path = which::which(format!("arm-frc{year}-linux-gnueabi-gcc")).ok().expect(EXPECT);
-                let prospective = gcc_path.parent().expect(EXPECT).join(format!("{ATHENA_TARGET}/sysroot"));
+                let prospective = gcc_path.parent().expect(EXPECT).join(format!("../{ATHENA_TARGET}/sysroot"));
                 prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None }).expect(EXPECT).expect(EXPECT)
             };
 
@@ -414,12 +414,11 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
             const ARM64_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
             const ARM64_TARGET: &str = "aarch64-linux-gnu";
             const EXPECT: &str = "Cannot find arm64 sysroot!";
-            //, "aarch64-linux-gnu"))
             let path = if Path::new(ARM64_SYSROOT).exists() {
                 Path::new(ARM64_SYSROOT).into()
             } else { 
                 let gcc_path = which::which(format!("aarch64-bookworm-linux-gnu-gcc")).ok().expect(EXPECT);
-                let prospective = gcc_path.parent().expect(EXPECT).join(format!("{ARM64_TARGET}/sysroot"));
+                let prospective = gcc_path.parent().expect(EXPECT).join(format!("../{ARM64_TARGET}/sysroot"));
                 prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None }).expect(EXPECT).expect(EXPECT)
             };
             Some(Sysroot::new(&path, ARM64_TARGET))
