@@ -10,8 +10,11 @@ As such, you can add `wpihal` as a git dependency to your project toml:
 
 ```toml
 [dependencies]
-wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git" }
+wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git", branch = "2025" }
 ```
+
+I recommend pinning to a specific commit or branch.
+**The API may change at a moment's notice,** although it is starting to stabilize. Ish.
 
 ## Why just the HAL?
 
@@ -44,8 +47,7 @@ Actual achievements of these aims is not certain and there are almost certainly 
  * to be fair, it's for similar reasons as gradle as it's bottlenecked on unzipping artifacts
 
 ## Things that could use some work
-* Testing on real hardware
 * Better guards against WPILib's overuse of `i32`s for things that are NOT i32 sized
 * macro-ized halsim wrapers
 * Versioning this in both the semver sense and the wpilib sense they are inconsistent with each other
-* Usage reporting enumization
+* Better usage reporting enumization
