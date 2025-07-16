@@ -116,8 +116,6 @@ impl MavenRepo {
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Platform {
-    LinuxAthena,     // roborio
-    LinuxArm32,      // old and stinky coprocs
     LinuxArm64,      // new coprocs
     LinuxSystemCore, // systemcore
     LinuxX86_64,     // Intel
@@ -129,8 +127,6 @@ pub enum Platform {
 impl Platform {
     pub fn platform_string(&self) -> &'static str {
         match self {
-            Platform::LinuxAthena => "linuxathena",
-            Platform::LinuxArm32 => "linuxarm32",
             Platform::LinuxArm64 => "linuxarm64",
             Platform::LinuxX86_64 => "linuxx86-64",
             Platform::LinuxSystemCore => "linuxsystemcore",
@@ -142,8 +138,6 @@ impl Platform {
 
     pub fn operating_system(&self) -> &'static str {
         match self {
-            Platform::LinuxAthena => "linux",
-            Platform::LinuxArm32 => "linux",
             Platform::LinuxArm64 => "linux",
             Platform::LinuxX86_64 => "linux",
             Platform::LinuxSystemCore => "linux",
@@ -155,8 +149,6 @@ impl Platform {
 
     pub fn architecture(&self) -> &'static str {
         match self {
-            Platform::LinuxAthena => "athena",
-            Platform::LinuxArm32 => "arm32",
             Platform::LinuxArm64 => "arm64",
             Platform::LinuxSystemCore => "systemcore",
             Platform::LinuxX86_64 => "x86-64",
@@ -168,8 +160,6 @@ impl Platform {
 
     pub fn from_rust_target(rust_target: &str, robot_controller: bool) -> Option<Self> {
         match rust_target {
-            "arm-unknown-linux-gnueabi" => Some(Self::LinuxAthena), // the roborio
-            "arm-unknown-linux-gnueabihf" => Some(Self::LinuxArm32), // old and stinky coprocessors
             "aarch64-unknown-linux-gnu" => {
                 // man i miss how the roborio did this
                 // but i do NOT miss arm soft-float.
@@ -459,75 +449,44 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
     // Locates the sysroot.
     /*
     Sysroots are located at:
-      roborio:
-        /usr/local/arm-nilrt-linux-gnueabi/sysroot
-        ~/wpilib/{YEAR}/roborio/arm-nilrt-linux-gnueabi/sysroot
+      systemcore:
+        /usr/local/aarch64-linux-gnu/sysroot
+        ~/wpilib/{YEAR}/systemcore/aarch64-linux-gnu/sysroot
       aarch64:
         /usr/local/aarch64-linux-gnu/sysroot
-      armhf:
-        /usr/local/arm-linux-gnueabihf/sysroot
 
       Everything else shouldn't need one because it's a native build.
      */
     match platform {
-        Platform::LinuxAthena => {
-            // first check the local location first and then try everything else
-            const ATHENA_SYSROOT: &str = "/usr/local/arm-nilrt-linux-gnueabi/sysroot";
-            if Path::new(ATHENA_SYSROOT).exists() {
-                Some(Sysroot::new(
-                    Path::new(ATHENA_SYSROOT),
-                    "arm-nilrt-linux-gnueabi",
-                ))
-            } else {
-                let user_sysroot = get_wpilib_root(year)
-                    .join("roborio")
-                    .join("arm-nilrt-linux-gnueabi")
-                    .join("sysroot");
-                if user_sysroot.exists() {
-                    Some(Sysroot::new(&user_sysroot, "arm-nilrt-linux-gnueabi"))
-                } else {
-                    None
-                }
-            }
-        }
         Platform::LinuxSystemCore => {
             // first check the local location first and then try everything else
             const SYSTEMCORE_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
-            if Path::new(SYSTEMCORE_SYSROOT).exists() {
-                Some(Sysroot::new(
-                    Path::new(SYSTEMCORE_SYSROOT),
-                    "aarch64-linux-gnu",
-                ))
+            const SYSTEMCORE_TARGET: &str = "aarch64-linux-gnu";
+            let user_sysroot = get_wpilib_root(year).join("systemcore").join(SYSTEMCORE_TARGET).join("sysroot");
+            let path = if Path::new(SYSTEMCORE_SYSROOT).exists() {
+                Path::new(SYSTEMCORE_SYSROOT).into()
+            } else if user_sysroot.exists() {
+                user_sysroot
             } else {
-                let user_sysroot = get_wpilib_root(year)
-                    .join("systemcore")
-                    .join("aarch64-linux-gnu")
-                    .join("sysroot");
-                if user_sysroot.exists() {
-                    Some(Sysroot::new(&user_sysroot, "aarch64-linux-gnu"))
-                } else {
-                    None
-                }
-            }
-        }
-        Platform::LinuxArm32 => {
-            const ARM32_SYSROOT: &str = "/usr/local/arm-linux-gnueabihf/sysroot";
-            if Path::new(ARM32_SYSROOT).exists() {
-                Some(Sysroot::new(
-                    Path::new(ARM32_SYSROOT),
-                    "arm-linux-gnueabihf",
-                ))
-            } else {
-                None
-            }
+                let gcc_path = which::which(format!("aarch64-bookworm-linux-gnu-gcc")).ok()?;
+                let prospective = gcc_path.parent()?.join(format!("{SYSTEMCORE_TARGET}/sysroot"));
+                prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None })??
+            };
+
+            Some(Sysroot::new(&path, SYSTEMCORE_TARGET))
         }
         Platform::LinuxArm64 => {
             const ARM64_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
-            if Path::new(ARM64_SYSROOT).exists() {
-                Some(Sysroot::new(Path::new(ARM64_SYSROOT), "aarch64-linux-gnu"))
-            } else {
-                None
-            }
+            const ARM64_TARGET: &str = "aarch64-linux-gnu";
+            //, "aarch64-linux-gnu"))
+            let path = if Path::new(ARM64_SYSROOT).exists() {
+                Path::new(ARM64_SYSROOT).into()
+            } else { 
+                let gcc_path = which::which(format!("aarch64-bookworm-linux-gnu-gcc")).ok()?;
+                let prospective = gcc_path.parent()?.join(format!("{ARM64_TARGET}/sysroot"));
+                prospective.try_exists().ok().map(|e| if e { Some(prospective) } else { None })??
+            };
+            Some(Sysroot::new(&path, ARM64_TARGET))
         }
         _ => None,
     }
