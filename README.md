@@ -10,16 +10,16 @@ As such, you can add `wpihal` as a git dependency to your project toml:
 
 ```toml
 [dependencies]
-wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git" }
+wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git", branch = "2027", features = ["robot-controller"] }
 ```
 
 I recommend pinning to a specific commit or branch.
+**The API may change at a moment's notice,** especially since this is tracking the SystemCore alpha/beta testing releases.
 
 ## Compiling for coprocessors
 
-Unset the `robot-controller` feature flag if you want to compile for arm64 coprocs instead of SystemCore.
-
-Otherwise arm64 is assumed to be systemcore.
+Set the `robot-controller` feature flag if you want to compile for SystemCore.
+Otherwise, this library will be linked against the arm64 coprocessor artifacts.
 
 ## Why just the HAL?
 
@@ -32,8 +32,7 @@ Besides the obvious "run your robot off of Rust", HAL bindings also have additio
 * Vendor drivers
 * Other pieces of native code run in FRC contexts that would benefit from not having to compile under 3 different C++ compilers of varying versions
 
-This library does _not_ wrap ChipObject/HMB or FRCNetComm directly; if you want that you'll need to do that yourself.
-
+This library does _not_ wrap higher-level layers directly; if you want that you'll need to do that yourself.
 
 ## Overall goals
 
@@ -53,11 +52,9 @@ Actual achievements of these aims is not certain and there are almost certainly 
 
 ## Things that could use some work
 
-* Testing on real hardware
 * Better guards against WPILib's overuse of `i32`s for things that are NOT i32 sized
-* macro-ized halsim wrapers
-* Versioning this in both the semver sense and the wpilib sense they are inconsistent with each other
+* Macro-ized halsim wrapers
+* Stability guarentees
 * NTCore support
 * Be more specific about usage of `&mut self` vs `&self` on wrapper types depending on if the underlying HAL impl is thread-safe (which implies `Send`/`Sync`)
 * `WPI_EventHandle` support (and `HAL_ProvideNewDataEventHandle` and friends)
-* CI systemcore sysroot
