@@ -4,7 +4,9 @@ pub fn now_default() -> u64 {
 }
 
 pub fn shutdown_now_rio() {
-    unsafe { wpiutil_sys::WPI_Impl_ShutdownNowRio(); }
+    unsafe {
+        wpiutil_sys::WPI_Impl_ShutdownNowRio();
+    }
 }
 
 pub fn set_now_impl(now_impl: extern "C" fn() -> u64) {

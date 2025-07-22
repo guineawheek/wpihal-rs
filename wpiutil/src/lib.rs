@@ -1,3 +1,3 @@
+pub mod datalog;
 pub mod timestamp;
 pub mod wpistring;
-pub mod datalog;

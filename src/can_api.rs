@@ -1,4 +1,8 @@
-use wpihal_sys::{HAL_CANDeviceType, HAL_CANHandle, HAL_CANManufacturer, HAL_CleanCAN, HAL_GetCANPacketBaseTime, HAL_InitializeCAN, HAL_ReadCANPacketNew, HAL_ReadCANPacketTimeout, HAL_StopCANPacketRepeating, HAL_WriteCANPacket, HAL_WriteCANPacketRepeating, HAL_WriteCANRTRFrame};
+use wpihal_sys::{
+    HAL_CANDeviceType, HAL_CANHandle, HAL_CANManufacturer, HAL_CleanCAN, HAL_GetCANPacketBaseTime,
+    HAL_InitializeCAN, HAL_ReadCANPacketNew, HAL_ReadCANPacketTimeout, HAL_StopCANPacketRepeating,
+    HAL_WriteCANPacket, HAL_WriteCANPacketRepeating, HAL_WriteCANRTRFrame,
+};
 
 use crate::{can::CANStreamMessage, error::HALResult, hal_call};
 
@@ -17,7 +21,7 @@ pub struct CANPacket {
     data: [u8; 8],
     length: u8,
     api_id: u16,
-    timestamp: u64
+    timestamp: u64,
 }
 
 impl CANPacket {
@@ -26,7 +30,7 @@ impl CANPacket {
     }
     pub fn new_with_timestamp(data: &[u8], api_id: u16, timestamp: u64) -> Self {
         let length = data.len().min(8);
-        let mut data_buf =  [0u8; 8];
+        let mut data_buf = [0u8; 8];
         data_buf.copy_from_slice(&data[..length]);
         Self {
             data: data_buf,
@@ -55,9 +59,9 @@ impl CANPacket {
 
 impl From<CANStreamMessage> for CANPacket {
     fn from(value: CANStreamMessage) -> Self {
-        CANPacket { 
-            data: value.data, 
-            length: value.dataSize, 
+        CANPacket {
+            data: value.data,
+            length: value.dataSize,
             api_id: ((value.messageID >> 6) & 0x3ff) as u16,
             timestamp: value.timeStamp as u64,
         }
@@ -68,16 +72,35 @@ impl From<CANStreamMessage> for CANPacket {
 pub struct CAN(CANHandle);
 
 impl CAN {
-    pub fn initialize(manufacturer: CANManufacturer, device_id: u8, device_type: CANDeviceType) -> HALResult<CAN> {
-        Ok(Self(hal_call!(HAL_InitializeCAN(manufacturer, device_id as i32, device_type))?))
+    pub fn initialize(
+        manufacturer: CANManufacturer,
+        device_id: u8,
+        device_type: CANDeviceType,
+    ) -> HALResult<CAN> {
+        Ok(Self(hal_call!(HAL_InitializeCAN(
+            manufacturer,
+            device_id as i32,
+            device_type
+        ))?))
     }
 
     pub fn write_packet(&self, packet: &CANPacket) -> HALResult<()> {
-        hal_call!(HAL_WriteCANPacket(self.0, packet.data.as_ptr(), packet.length as i32, packet.api_id as i32))
+        hal_call!(HAL_WriteCANPacket(
+            self.0,
+            packet.data.as_ptr(),
+            packet.length as i32,
+            packet.api_id as i32
+        ))
     }
 
     pub fn write_repeating(&self, packet: &CANPacket, repeat_ms: i32) -> HALResult<()> {
-        hal_call!(HAL_WriteCANPacketRepeating(self.0, packet.data.as_ptr(), packet.length as i32, packet.api_id as i32, repeat_ms))
+        hal_call!(HAL_WriteCANPacketRepeating(
+            self.0,
+            packet.data.as_ptr(),
+            packet.length as i32,
+            packet.api_id as i32,
+            repeat_ms
+        ))
     }
 
     pub fn write_rtr(&self, length: u8, api_id: u16) -> HALResult<()> {
@@ -93,9 +116,20 @@ impl CAN {
         let mut length = 0i32;
         let mut timestamp = 0u64;
 
-        hal_call!(HAL_ReadCANPacketNew(self.0, api_id as i32, data.as_mut_ptr(), &mut length, &mut timestamp))?;
+        hal_call!(HAL_ReadCANPacketNew(
+            self.0,
+            api_id as i32,
+            data.as_mut_ptr(),
+            &mut length,
+            &mut timestamp
+        ))?;
 
-        Ok(CANPacket { data, length: length as u8, api_id, timestamp })
+        Ok(CANPacket {
+            data,
+            length: length as u8,
+            api_id,
+            timestamp,
+        })
     }
 
     pub fn read_can_packet_latest(&self, api_id: u16) -> HALResult<CANPacket> {
@@ -103,9 +137,20 @@ impl CAN {
         let mut length = 0i32;
         let mut timestamp = 0u64;
 
-        hal_call!(HAL_ReadCANPacketNew(self.0, api_id as i32, data.as_mut_ptr(), &mut length, &mut timestamp))?;
+        hal_call!(HAL_ReadCANPacketNew(
+            self.0,
+            api_id as i32,
+            data.as_mut_ptr(),
+            &mut length,
+            &mut timestamp
+        ))?;
 
-        Ok(CANPacket { data, length: length as u8, api_id, timestamp })
+        Ok(CANPacket {
+            data,
+            length: length as u8,
+            api_id,
+            timestamp,
+        })
     }
 
     pub fn read_can_packet_timeout(&self, api_id: u16, timeout_ms: i32) -> HALResult<CANPacket> {
@@ -113,14 +158,28 @@ impl CAN {
         let mut length = 0i32;
         let mut timestamp = 0u64;
 
-        hal_call!(HAL_ReadCANPacketTimeout(self.0, api_id as i32, data.as_mut_ptr(), &mut length, &mut timestamp, timeout_ms))?;
+        hal_call!(HAL_ReadCANPacketTimeout(
+            self.0,
+            api_id as i32,
+            data.as_mut_ptr(),
+            &mut length,
+            &mut timestamp,
+            timeout_ms
+        ))?;
 
-        Ok(CANPacket { data, length: length as u8, api_id, timestamp })
+        Ok(CANPacket {
+            data,
+            length: length as u8,
+            api_id,
+            timestamp,
+        })
     }
 }
 
 impl Drop for CAN {
     fn drop(&mut self) {
-        unsafe { HAL_CleanCAN(self.0); }
+        unsafe {
+            HAL_CleanCAN(self.0);
+        }
     }
 }

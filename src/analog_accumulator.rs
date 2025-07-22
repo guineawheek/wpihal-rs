@@ -1,4 +1,8 @@
-use wpihal_sys::{HAL_AnalogInputHandle, HAL_GetAccumulatorCount, HAL_GetAccumulatorOutput, HAL_GetAccumulatorValue, HAL_InitAccumulator, HAL_ResetAccumulator, HAL_SetAccumulatorCenter, HAL_SetAccumulatorDeadband};
+use wpihal_sys::{
+    HAL_AnalogInputHandle, HAL_GetAccumulatorCount, HAL_GetAccumulatorOutput,
+    HAL_GetAccumulatorValue, HAL_InitAccumulator, HAL_ResetAccumulator, HAL_SetAccumulatorCenter,
+    HAL_SetAccumulatorDeadband,
+};
 
 use crate::{analog_input::AnalogInput, error::HALResult, hal_call, Handle};
 
@@ -8,7 +12,7 @@ pub struct AnalogAccumulator<'a>(&'a AnalogInput);
 
 impl<'a> AnalogAccumulator<'a> {
     /// Initializes an accumulator attached to an analog input.
-    /// 
+    ///
     /// This function will fail if the analog input is not accumulator capable.
     pub fn initialize(analog_port_handle: &'a AnalogInput) -> HALResult<Self> {
         hal_call!(HAL_InitAccumulator(analog_port_handle.raw_handle()))?;
@@ -49,10 +53,14 @@ impl<'a> AnalogAccumulator<'a> {
     }
 
     /// Reads both accumulated value and value count atomically from the FPGA, useful for averaging.
-    pub fn get_output(&self) -> HALResult<(i64, i64)>  {
+    pub fn get_output(&self) -> HALResult<(i64, i64)> {
         let mut value = 0i64;
-        let mut count= 0i64;
-        hal_call!(HAL_GetAccumulatorOutput(self.0.raw_handle(), &mut value, &mut count))?;
+        let mut count = 0i64;
+        hal_call!(HAL_GetAccumulatorOutput(
+            self.0.raw_handle(),
+            &mut value,
+            &mut count
+        ))?;
         Ok((value, count))
     }
 

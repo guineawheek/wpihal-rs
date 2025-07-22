@@ -15,35 +15,35 @@ impl HALValue {
     pub fn get_bool(&self) -> Option<bool> {
         match self {
             Self::Boolean(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn get_double(&self) -> Option<f64> {
         match self {
             Self::Double(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn get_enum(&self) -> Option<i32> {
         match self {
             Self::Enum(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn get_int(&self) -> Option<i32> {
         match self {
             Self::Int(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn get_long(&self) -> Option<i64> {
         match self {
             Self::Long(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -57,7 +57,7 @@ impl From<HAL_Value> for HALValue {
                 HAL_Type::HAL_DOUBLE => HALValue::Double(value.data.v_double),
                 HAL_Type::HAL_ENUM => HALValue::Enum(value.data.v_enum),
                 HAL_Type::HAL_INT => HALValue::Int(value.data.v_int),
-                HAL_Type::HAL_LONG => HALValue::Long(value.data.v_long)
+                HAL_Type::HAL_LONG => HALValue::Long(value.data.v_long),
             }
         }
     }
@@ -66,12 +66,32 @@ impl From<HAL_Value> for HALValue {
 impl From<HALValue> for HAL_Value {
     fn from(value: HALValue) -> Self {
         match value {
-            HALValue::Unassigned =>HAL_Value { data: HAL_Value__bindgen_ty_1 { v_boolean: 0 }, type_: HAL_Type::HAL_UNASSIGNED }, 
-            HALValue::Boolean(v) => HAL_Value { data: HAL_Value__bindgen_ty_1 { v_boolean: v as i32 }, type_: HAL_Type::HAL_BOOLEAN },
-            HALValue::Double(v) => HAL_Value { data: HAL_Value__bindgen_ty_1 { v_double: v }, type_: HAL_Type::HAL_DOUBLE },
-            HALValue::Enum(v) => HAL_Value { data: HAL_Value__bindgen_ty_1 { v_enum: v }, type_: HAL_Type::HAL_ENUM },
-            HALValue::Int(v) => HAL_Value { data: HAL_Value__bindgen_ty_1 { v_int: v }, type_: HAL_Type::HAL_INT },
-            HALValue::Long(v) => HAL_Value { data: HAL_Value__bindgen_ty_1 { v_long: v }, type_: HAL_Type::HAL_LONG },
+            HALValue::Unassigned => HAL_Value {
+                data: HAL_Value__bindgen_ty_1 { v_boolean: 0 },
+                type_: HAL_Type::HAL_UNASSIGNED,
+            },
+            HALValue::Boolean(v) => HAL_Value {
+                data: HAL_Value__bindgen_ty_1 {
+                    v_boolean: v as i32,
+                },
+                type_: HAL_Type::HAL_BOOLEAN,
+            },
+            HALValue::Double(v) => HAL_Value {
+                data: HAL_Value__bindgen_ty_1 { v_double: v },
+                type_: HAL_Type::HAL_DOUBLE,
+            },
+            HALValue::Enum(v) => HAL_Value {
+                data: HAL_Value__bindgen_ty_1 { v_enum: v },
+                type_: HAL_Type::HAL_ENUM,
+            },
+            HALValue::Int(v) => HAL_Value {
+                data: HAL_Value__bindgen_ty_1 { v_int: v },
+                type_: HAL_Type::HAL_INT,
+            },
+            HALValue::Long(v) => HAL_Value {
+                data: HAL_Value__bindgen_ty_1 { v_long: v },
+                type_: HAL_Type::HAL_LONG,
+            },
         }
     }
 }

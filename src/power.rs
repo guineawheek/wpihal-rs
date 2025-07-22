@@ -1,7 +1,13 @@
-use wpihal_sys::{HAL_GetBrownoutVoltage, HAL_GetCPUTemp, HAL_GetUserActive3V3, HAL_GetUserActive5V, HAL_GetUserActive6V, HAL_GetUserCurrent3V3, HAL_GetUserCurrent5V, HAL_GetUserCurrent6V, HAL_GetUserCurrentFaults3V3, HAL_GetUserCurrentFaults5V, HAL_GetUserCurrentFaults6V, HAL_GetUserVoltage3V3, HAL_GetUserVoltage5V, HAL_GetUserVoltage6V, HAL_GetVinCurrent, HAL_GetVinVoltage, HAL_ResetUserCurrentFaults, HAL_SetBrownoutVoltage, HAL_SetUserRailEnabled3V3, HAL_SetUserRailEnabled5V, HAL_SetUserRailEnabled6V};
+use wpihal_sys::{
+    HAL_GetBrownoutVoltage, HAL_GetCPUTemp, HAL_GetUserActive3V3, HAL_GetUserActive5V,
+    HAL_GetUserActive6V, HAL_GetUserCurrent3V3, HAL_GetUserCurrent5V, HAL_GetUserCurrent6V,
+    HAL_GetUserCurrentFaults3V3, HAL_GetUserCurrentFaults5V, HAL_GetUserCurrentFaults6V,
+    HAL_GetUserVoltage3V3, HAL_GetUserVoltage5V, HAL_GetUserVoltage6V, HAL_GetVinCurrent,
+    HAL_GetVinVoltage, HAL_ResetUserCurrentFaults, HAL_SetBrownoutVoltage,
+    HAL_SetUserRailEnabled3V3, HAL_SetUserRailEnabled5V, HAL_SetUserRailEnabled6V,
+};
 
 use crate::{error::HALResult, hal_call};
-
 
 pub fn get_vin_voltage() -> HALResult<f64> {
     hal_call!(HAL_GetVinVoltage())
@@ -82,7 +88,6 @@ pub fn get_brownout_voltage() -> HALResult<f64> {
 pub fn set_brownout_voltage(voltage: f64) -> HALResult<()> {
     hal_call!(HAL_SetBrownoutVoltage(voltage))
 }
-
 
 pub fn get_cpu_temp() -> HALResult<f64> {
     hal_call!(HAL_GetCPUTemp())

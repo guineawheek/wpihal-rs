@@ -1,5 +1,8 @@
-use wpihal_sys::{HAL_GetAccelerometerX, HAL_GetAccelerometerY, HAL_GetAccelerometerZ, HAL_SetAccelerometerActive, HAL_SetAccelerometerRange};
 pub use wpihal_sys::HAL_AccelerometerRange as AccelerometerRange;
+use wpihal_sys::{
+    HAL_GetAccelerometerX, HAL_GetAccelerometerY, HAL_GetAccelerometerZ,
+    HAL_SetAccelerometerActive, HAL_SetAccelerometerRange,
+};
 
 ///
 /// Sets the accelerometer to active or standby mode.

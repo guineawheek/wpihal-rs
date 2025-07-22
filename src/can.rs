@@ -1,10 +1,34 @@
-use wpihal_sys::{HAL_CANStreamMessage, HAL_CAN_CloseStreamSession, HAL_CAN_GetCANStatus, HAL_CAN_OpenStreamSession, HAL_CAN_ReadStreamSession, HAL_CAN_ReceiveMessage, HAL_CAN_SendMessage, HAL_CAN_SEND_PERIOD_NO_REPEAT, HAL_CAN_SEND_PERIOD_STOP_REPEATING};
+use wpihal_sys::{
+    HAL_CANStreamMessage, HAL_CAN_CloseStreamSession, HAL_CAN_GetCANStatus,
+    HAL_CAN_OpenStreamSession, HAL_CAN_ReadStreamSession, HAL_CAN_ReceiveMessage,
+    HAL_CAN_SendMessage, HAL_ERR_CANSessionMux_SessionOverrun, HAL_CAN_BUFFER_OVERRUN,
+    HAL_CAN_IS_FRAME_11BIT, HAL_CAN_IS_FRAME_REMOTE, HAL_CAN_SEND_PERIOD_NO_REPEAT,
+    HAL_CAN_SEND_PERIOD_STOP_REPEATING, HAL_CAN_TIMEOUT,
+};
 
-use crate::{error::{HALError, HALResult}, hal_call};
+use crate::{
+    error::{HALError, HALResult},
+    hal_call,
+};
 
 pub type CANStreamMessage = HAL_CANStreamMessage;
+/// Send the message but do not repeat it periodically.
 pub const SEND_PERIOD_NO_REPEAT: i32 = HAL_CAN_SEND_PERIOD_NO_REPEAT as i32;
+/// Stop repeating the message.
 pub const SEND_PERIOD_STOP_REPEATING: i32 = HAL_CAN_SEND_PERIOD_STOP_REPEATING;
+/// This bit is set in the [`CANStreamMessage::messageID`] field if the frame is a remote (RTR) frame.
+pub const CAN_IS_FRAME_REMOTE: u32 = HAL_CAN_IS_FRAME_REMOTE;
+/// This bit is set in the [`CANStreamMessage::messageID`] field if the frame has an 11-bit CAN 2.0a arbitration ID.
+pub const CAN_IS_FRAME_11BIT: u32 = HAL_CAN_IS_FRAME_11BIT;
+/// The session handle has been overrun.
+/// Typically happens if incoming messages had to be dropped because too many
+/// were received between [`StreamSession::read_into`] calls.
+pub const ERR_SESSION_OVERRUN: i32 = HAL_ERR_CANSessionMux_SessionOverrun as i32;
+/// CAN receive has timed out
+pub const ERR_CAN_TIMEOUT: i32 = HAL_CAN_TIMEOUT;
+/// The transmit buffer has overrun.
+/// This typically happens when [`send_message`] is called too quickly, and that you should retry later.
+pub const ERR_CAN_BUFFER_OVERRUN: i32 = HAL_CAN_BUFFER_OVERRUN;
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -13,7 +37,7 @@ pub struct CANStatus {
     pub bus_off_count: u32,
     pub tx_full_count: u32,
     pub receive_error_count: u32,
-    pub transmit_error_count: u32
+    pub transmit_error_count: u32,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -23,9 +47,18 @@ pub struct StreamSession {
 }
 
 impl StreamSession {
-    pub fn open(message_id: u32, message_id_mask: u32, max_messages: u32) -> HALResult<StreamSession> {
+    pub fn open(
+        message_id: u32,
+        message_id_mask: u32,
+        max_messages: u32,
+    ) -> HALResult<StreamSession> {
         let mut session_handle = 0_u32;
-        hal_call!(HAL_CAN_OpenStreamSession(&mut session_handle, message_id, message_id_mask, max_messages))?;
+        hal_call!(HAL_CAN_OpenStreamSession(
+            &mut session_handle,
+            message_id,
+            message_id_mask,
+            max_messages
+        ))?;
         Ok(StreamSession {
             handle: session_handle,
             capacity: max_messages,
@@ -37,7 +70,13 @@ impl StreamSession {
         let max_msg = messages.len().min(self.capacity as usize) as u32;
         let mut status = 0;
         unsafe {
-            HAL_CAN_ReadStreamSession(self.handle, messages.as_mut_ptr(), max_msg, &mut messages_read, &mut status)
+            HAL_CAN_ReadStreamSession(
+                self.handle,
+                messages.as_mut_ptr(),
+                max_msg,
+                &mut messages_read,
+                &mut status,
+            )
         };
         (
             messages_read as usize,
@@ -45,15 +84,19 @@ impl StreamSession {
                 None
             } else {
                 Some(HALError::from(status))
-            }
+            },
         )
-
     }
 }
 
 pub fn send_message(message_id: u32, data: &[u8], period_ms: i32) -> HALResult<()> {
     let size = data.len().min(8) as u8;
-    hal_call!(HAL_CAN_SendMessage(message_id, data.as_ptr(), size, period_ms))
+    hal_call!(HAL_CAN_SendMessage(
+        message_id,
+        data.as_ptr(),
+        size,
+        period_ms
+    ))
 }
 
 pub fn receive_message(message_id_mask: u32) -> HALResult<CANStreamMessage> {
@@ -63,7 +106,13 @@ pub fn receive_message(message_id_mask: u32) -> HALResult<CANStreamMessage> {
         data: [0u8; 8],
         dataSize: 0,
     };
-    hal_call!(HAL_CAN_ReceiveMessage(&mut msg.messageID, message_id_mask, msg.data.as_mut_ptr(), &mut msg.dataSize, &mut msg.timeStamp))?;
+    hal_call!(HAL_CAN_ReceiveMessage(
+        &mut msg.messageID,
+        message_id_mask,
+        msg.data.as_mut_ptr(),
+        &mut msg.dataSize,
+        &mut msg.timeStamp
+    ))?;
     Ok(msg)
 }
 

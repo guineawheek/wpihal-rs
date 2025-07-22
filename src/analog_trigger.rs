@@ -1,4 +1,11 @@
-use wpihal_sys::{HAL_AnalogTriggerHandle, HAL_AnalogTriggerType, HAL_CleanAnalogTrigger, HAL_GetAnalogTriggerFPGAIndex, HAL_GetAnalogTriggerInWindow, HAL_GetAnalogTriggerOutput, HAL_GetAnalogTriggerTriggerState, HAL_InitializeAnalogTrigger, HAL_InitializeAnalogTriggerDutyCycle, HAL_SetAnalogTriggerAveraged, HAL_SetAnalogTriggerFiltered, HAL_SetAnalogTriggerLimitsDutyCycle, HAL_SetAnalogTriggerLimitsRaw, HAL_SetAnalogTriggerLimitsVoltage};
+use wpihal_sys::{
+    HAL_AnalogTriggerHandle, HAL_AnalogTriggerType, HAL_CleanAnalogTrigger,
+    HAL_GetAnalogTriggerFPGAIndex, HAL_GetAnalogTriggerInWindow, HAL_GetAnalogTriggerOutput,
+    HAL_GetAnalogTriggerTriggerState, HAL_InitializeAnalogTrigger,
+    HAL_InitializeAnalogTriggerDutyCycle, HAL_SetAnalogTriggerAveraged,
+    HAL_SetAnalogTriggerFiltered, HAL_SetAnalogTriggerLimitsDutyCycle,
+    HAL_SetAnalogTriggerLimitsRaw, HAL_SetAnalogTriggerLimitsVoltage,
+};
 
 use crate::{analog_input::AnalogInput, duty_cycle::DutyCycle, error::HALResult, hal_call, Handle};
 
@@ -17,11 +24,17 @@ pub struct AnalogTrigger<'a>(AnalogTriggerHandle, AnalogTriggerInput<'a>);
 
 impl<'a> AnalogTrigger<'a> {
     pub fn initialize_analog(handle: &'a AnalogInput) -> HALResult<Self> {
-        Ok(Self(hal_call!(HAL_InitializeAnalogTrigger(handle.raw_handle()))?, AnalogTriggerInput::AnalogInput(handle)))
+        Ok(Self(
+            hal_call!(HAL_InitializeAnalogTrigger(handle.raw_handle()))?,
+            AnalogTriggerInput::AnalogInput(handle),
+        ))
     }
 
     pub fn initialize_duty_cycle(handle: &'a DutyCycle<'a>) -> HALResult<Self> {
-        Ok(Self(hal_call!(HAL_InitializeAnalogTriggerDutyCycle(handle.raw_handle()))?, AnalogTriggerInput::DutyCycle(handle)))
+        Ok(Self(
+            hal_call!(HAL_InitializeAnalogTriggerDutyCycle(handle.raw_handle()))?,
+            AnalogTriggerInput::DutyCycle(handle),
+        ))
     }
 
     pub fn set_limits_raw(&mut self, lower: i32, upper: i32) -> HALResult<()> {
@@ -59,12 +72,13 @@ impl<'a> AnalogTrigger<'a> {
     pub fn get_fpga_index(&self) -> HALResult<i32> {
         hal_call!(HAL_GetAnalogTriggerFPGAIndex(self.0))
     }
-
 }
 
 impl<'a> Drop for AnalogTrigger<'a> {
     fn drop(&mut self) {
-        unsafe { HAL_CleanAnalogTrigger(self.0); }
+        unsafe {
+            HAL_CleanAnalogTrigger(self.0);
+        }
     }
 }
 
