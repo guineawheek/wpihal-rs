@@ -137,20 +137,32 @@ impl PowerDistribution {
     }
 
     pub fn start_stream(&mut self) -> HALResult<()> {
-        hal_call!(HAL_StartPowerDistributionStream(self.0))
+        if cfg!(not(target_os = "windows")) {
+            hal_call!(HAL_StartPowerDistributionStream(self.0))
+        } else {
+            Err(crate::error::HALError(wpihal_sys::HAL_SIM_NOT_SUPPORTED))
+        }
     }
 
     pub fn stop_stream(&mut self) -> HALResult<()> {
-        hal_call!(HAL_StopPowerDistributionStream(self.0))
+        if cfg!(not(target_os = "windows")) {
+            hal_call!(HAL_StopPowerDistributionStream(self.0))
+        } else {
+            Err(crate::error::HALError(wpihal_sys::HAL_SIM_NOT_SUPPORTED))
+        }
     }
 
     pub fn get_stream(&self) -> HALResult<PowerDistributionStreamData> {
-        let mut count = 0i32;
-        let ptr = hal_call!(HAL_GetPowerDistributionStreamData(self.0, &mut count))?;
-        Ok(PowerDistributionStreamData {
-            ptr,
-            len: count as usize,
-        })
+        if cfg!(not(target_os = "windows")) {
+            let mut count = 0i32;
+            let ptr = hal_call!(HAL_GetPowerDistributionStreamData(self.0, &mut count))?;
+            Ok(PowerDistributionStreamData {
+                ptr,
+                len: count as usize,
+            })
+        } else {
+            Err(crate::error::HALError(wpihal_sys::HAL_SIM_NOT_SUPPORTED))
+        }
     }
 }
 
@@ -175,8 +187,10 @@ impl PowerDistributionStreamData {
 
 impl Drop for PowerDistributionStreamData {
     fn drop(&mut self) {
-        unsafe {
-            HAL_FreePowerDistributionStreamData(self.ptr, self.len as i32);
+        if cfg!(not(target_os = "windows")) {
+            unsafe {
+                HAL_FreePowerDistributionStreamData(self.ptr, self.len as i32);
+            }
         }
     }
 }

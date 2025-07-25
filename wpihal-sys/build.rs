@@ -58,14 +58,33 @@ pub fn main() {
         &buildlibs,
     )
     .unwrap();
-
-    if generate_usage_reporting {
-        // usage reporting doesn't exist in 2027
-        //create_usage_reporting(
-        //    &OUT_DIR.join("buildlibs/headers/hal/FRCUsageReporting.h"),
-        //    &OUT_DIR.join("usage_reporting.rs")
-        //);
-    }
+    wpilib_nativeutils::download_native_library_artifacts(
+        &repos,
+        *PLATFORM,
+        "edu.wpi.first.ntcore",
+        "ntcore-cpp",
+        &VERSION,
+        &buildlibs,
+    )
+    .unwrap();
+    wpilib_nativeutils::download_native_library_artifacts(
+        &repos,
+        *PLATFORM,
+        "edu.wpi.first.datalog",
+        "datalog-cpp",
+        &VERSION,
+        &buildlibs,
+    )
+    .unwrap();
+    wpilib_nativeutils::download_native_library_artifacts(
+        &repos,
+        *PLATFORM,
+        "edu.wpi.first.wpinet",
+        "wpinet-cpp",
+        &VERSION,
+        &buildlibs,
+    )
+    .unwrap();
     println!("cargo:rerun-if-changed=HALInclude.h");
     wpilib_nativeutils::rustc_link_search(
         &buildlibs,
@@ -73,7 +92,10 @@ pub fn main() {
         std::env::var("CARGO_FEATURE_SHARED").is_ok(),
         *DEBUG,
     );
-    wpilib_nativeutils::rustc_debug_switch(&["wpiHal", "wpiutil"], *DEBUG);
+    wpilib_nativeutils::rustc_debug_switch(
+        &["wpiHal", "wpiutil", "ntcore", "datalog", "wpinet"],
+        *DEBUG,
+    );
     generate_bindings_for_header(
         bindgen::Builder::default(),
         "HALInclude.h",
@@ -198,30 +220,4 @@ impl ResourceEnumBuilder {
         s.push_str("}\n");
         s
     }
-}
-
-fn create_usage_reporting(header: &PathBuf, output: &PathBuf) {
-    let file = std::fs::read_to_string(header).unwrap();
-    let re = regex::Regex::new(r"\s+k([a-zA-Z0-9]+)_([a-zA-Z0-9_]+) = ([0-9]+),").unwrap();
-    let mut enum_ents: BTreeMap<&str, ResourceEnumBuilder> = Default::default();
-
-    for (_, [enum_name, enum_var, value]) in
-        re.captures_iter(file.as_str()).map(|cap| cap.extract())
-    {
-        if !enum_ents.contains_key(enum_name) {
-            enum_ents.insert(enum_name, ResourceEnumBuilder::new(enum_name));
-        }
-        let ent = enum_ents.get_mut(enum_name).unwrap();
-
-        ent.variants
-            .insert(enum_var.to_string(), value.parse::<i32>().unwrap());
-    }
-
-    let mut usage_module = String::new();
-
-    for ent in enum_ents.values() {
-        usage_module.push_str(&ent.generate_enum());
-    }
-
-    std::fs::write(output, usage_module).unwrap();
 }
