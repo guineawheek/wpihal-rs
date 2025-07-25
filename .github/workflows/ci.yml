@@ -26,7 +26,7 @@ jobs:
     container: ${{ matrix.container }}
     steps:
       - name: Install build dependencies
-        run: apt-get update && apt-get install -y build-essential libssl-dev libclang-dev
+        run: apt-get update && apt-get install -y libclang-dev
       - uses: actions/checkout@v4
         with:
           submodules: true
@@ -41,7 +41,7 @@ jobs:
       - name: Attempt to build library
         run: cargo build --target=${{ matrix.target }} -p build-test ${{ matrix.flags }}
       - name: Attempt to run the build-test
-        run: cargo run -p build-test ${{ matrix.flags }}
+        run: cargo run -p build-test ${{ matrix.flags }} && cargo run -p build-test ${{ matrix.flags }} --release
 
   build-host:
     env: 
@@ -74,4 +74,4 @@ jobs:
           fetch-depth: 0
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Attempt to build/run library
-        run: cargo run -p build-test ${{ matrix.flags }}
+        run: cargo run -p build-test ${{ matrix.flags }} && cargo run -p build-test ${{ matrix.flags }} --release
