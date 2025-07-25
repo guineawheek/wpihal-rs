@@ -10,6 +10,7 @@ use std::{
 use bindgen::callbacks::ParseCallbacks;
 use wpilib_nativeutils::{Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain};
 
+const NI_VERSION: &'static str = "2025.2.0";
 static VERSION: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
 static YEAR: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION_MAJOR").unwrap());
 static PLATFORM: LazyLock<Platform> = LazyLock::new(|| {
@@ -55,6 +56,38 @@ pub fn main() {
         &buildlibs,
     )
     .unwrap();
+    if *PLATFORM == Platform::LinuxAthena && SHARED {
+        wpilib_nativeutils::download_native_library_artifacts(
+            &repos,
+            Platform::LinuxAthena,
+            "edu.wpi.first.ni-libraries",
+            "visa",
+            NI_VERSION,
+            &buildlibs,
+        )
+        .unwrap();
+        wpilib_nativeutils::download_native_library_artifacts(
+            &repos,
+            Platform::LinuxAthena,
+            "edu.wpi.first.ni-libraries",
+            "netcomm",
+            NI_VERSION,
+            &buildlibs,
+        )
+        .unwrap();
+        wpilib_nativeutils::download_native_library_artifacts(
+            &repos,
+            Platform::LinuxAthena,
+            "edu.wpi.first.ni-libraries",
+            "chipobject",
+            NI_VERSION,
+            &buildlibs,
+        )
+        .unwrap();
+        println!("cargo:rustc-link-lib=FRC_NetworkCommunication");
+        println!("cargo:rustc-link-lib=visa");
+        println!("cargo:rustc-link-lib=RoboRIO_FRC_ChipObject");
+    }
 
     if generate_usage_reporting {
         create_usage_reporting(
