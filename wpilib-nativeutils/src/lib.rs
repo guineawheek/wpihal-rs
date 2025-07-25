@@ -39,7 +39,7 @@ impl ArtifactType {
         match self {
             ArtifactType::Shared | ArtifactType::Static => "release",
             ArtifactType::SharedDebug | ArtifactType::StaticDebug => "debug",
-            _ => ""
+            _ => "",
         }
     }
 }
@@ -294,22 +294,27 @@ pub fn download_native_library_artifacts(
     let headers_dir = buildlibs.join("headers");
     std::fs::create_dir_all(&headers_dir)?;
 
-    if let Err(e) = download_artifact_zip_to_dir(
-        platform,
-        &headers_dir,
-        repos,
-        &Artifact {
-            artifact_type: ArtifactType::Headers,
-            group_id,
-            artifact_id,
-            version,
-        },
-    ) {
-        println!("cargo::warning=Could not download headers: {e}");
+    // we hardcode this because it's the ONLY artifact that doesn't have headers
+    if !(group_id == "edu.wpi.first.ni-libraries" && artifact_id == "runtime") {
+        download_artifact_zip_to_dir(
+            platform,
+            &headers_dir,
+            repos,
+            &Artifact {
+                artifact_type: ArtifactType::Headers,
+                group_id,
+                artifact_id,
+                version,
+            },
+        )?;
     }
-    
 
-    let artifact_types = artifact_types.unwrap_or(&[ArtifactType::Shared, ArtifactType::SharedDebug, ArtifactType::Static, ArtifactType::StaticDebug]);
+    let artifact_types = artifact_types.unwrap_or(&[
+        ArtifactType::Shared,
+        ArtifactType::SharedDebug,
+        ArtifactType::Static,
+        ArtifactType::StaticDebug,
+    ]);
     for artifact_type in artifact_types.iter().cloned() {
         let output_dir = buildlibs.join(artifact_type.debug_release());
         std::fs::create_dir_all(&output_dir)?;
@@ -328,8 +333,7 @@ pub fn download_native_library_artifacts(
     std::fs::OpenOptions::new()
         .create(true)
         .write(true)
-        .open(cache_marker)
-        .ok();
+        .open(cache_marker)?;
     Ok(())
 }
 

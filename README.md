@@ -16,6 +16,9 @@ wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git", branch = "2025"
 I recommend pinning to a specific commit or branch.
 **The API may change at a moment's notice,** although it is starting to stabilize. Ish.
 
+To accelerate build times, you should also install the version of WPILib corresponding to this package's version; in this case **v2025.3.2**;
+as the build scripts first search your computer for the WPILib Maven artifacts before trying to download them externally.
+
 ## Why just the HAL?
 
 Past attempts at writing a WPILib port for Rust have proven to be...a bit much to reliably maintain.

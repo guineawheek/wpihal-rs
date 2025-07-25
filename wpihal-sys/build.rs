@@ -67,7 +67,7 @@ pub fn main() {
                 ni_lib,
                 NI_VERSION,
                 &buildlibs,
-                Some(&[ArtifactType::Shared, ArtifactType::SharedDebug])
+                Some(&[ArtifactType::Shared, ArtifactType::SharedDebug]),
             )
             .unwrap();
         }
