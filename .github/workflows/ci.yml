@@ -37,6 +37,8 @@ jobs:
           target: ${{ matrix.target }}
       - name: Attempt to build library
         run: cargo build --target=${{ matrix.target }} -p build-test
+      - name: Attempt to run build-test
+        run: cargo run -p build-test && cargo run --release -p build-test
 
   build-host:
     env: 
@@ -65,5 +67,5 @@ jobs:
           submodules: true
           fetch-depth: 0
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Attempt to build library
-        run: cargo build -p build-test
+      - name: Attempt to run build-test
+        run: cargo run -p build-test && cargo run --release -p build-test
