@@ -1,9 +1,8 @@
 use std::ffi::CStr;
 
 use wpihal_sys::{
-    HAL_DutyCycleHandle, HAL_FreeDutyCycle, HAL_GetDutyCycleFPGAIndex, HAL_GetDutyCycleFrequency,
-    HAL_GetDutyCycleHighTime, HAL_GetDutyCycleOutput, HAL_GetDutyCycleOutputScaleFactor,
-    HAL_InitializeDutyCycle, HAL_SetDutyCycleSimDevice,
+    HAL_DutyCycleHandle, HAL_FreeDutyCycle, HAL_GetDutyCycleFrequency, HAL_GetDutyCycleHighTime,
+    HAL_GetDutyCycleOutput, HAL_InitializeDutyCycle, HAL_SetDutyCycleSimDevice,
 };
 
 use crate::{
@@ -34,7 +33,7 @@ impl DutyCycle {
         }
     }
 
-    pub fn get_frequency(&self) -> HALResult<i32> {
+    pub fn get_frequency(&self) -> HALResult<f64> {
         hal_call!(HAL_GetDutyCycleFrequency(self.handle))
     }
 
@@ -44,14 +43,6 @@ impl DutyCycle {
 
     pub fn get_high_time(&self) -> HALResult<i32> {
         hal_call!(HAL_GetDutyCycleHighTime(self.handle))
-    }
-
-    pub fn get_output_scale_factor(&self) -> HALResult<i32> {
-        hal_call!(HAL_GetDutyCycleOutputScaleFactor(self.handle))
-    }
-
-    pub fn get_fpga_index(&self) -> HALResult<i32> {
-        hal_call!(HAL_GetDutyCycleFPGAIndex(self.handle))
     }
 }
 

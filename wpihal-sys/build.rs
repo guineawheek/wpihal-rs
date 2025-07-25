@@ -16,7 +16,8 @@ static PLATFORM: LazyLock<Platform> = LazyLock::new(|| {
     Platform::from_rust_target(
         &std::env::var("TARGET").unwrap(),
         std::env::var("CARGO_FEATURE_ROBOT_CONTROLLER").is_ok(),
-    ).expect("Invalid build target")
+    )
+    .expect("Invalid build target")
 });
 static DEBUG: LazyLock<bool> = LazyLock::new(|| std::env::var("PROFILE").unwrap() == "debug");
 static OUT_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
@@ -66,7 +67,12 @@ pub fn main() {
         //);
     }
     println!("cargo:rerun-if-changed=HALInclude.h");
-    wpilib_nativeutils::rustc_link_search(&buildlibs, *PLATFORM, std::env::var("CARGO_FEATURE_SHARED").is_ok(), *DEBUG);
+    wpilib_nativeutils::rustc_link_search(
+        &buildlibs,
+        *PLATFORM,
+        std::env::var("CARGO_FEATURE_SHARED").is_ok(),
+        *DEBUG,
+    );
     wpilib_nativeutils::rustc_debug_switch(&["wpiHal", "wpiutil"], *DEBUG);
     generate_bindings_for_header(
         bindgen::Builder::default(),

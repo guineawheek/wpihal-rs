@@ -1,15 +1,29 @@
 use wpihal_sys::{
-    HAL_CAN_CloseStreamSession, HAL_CAN_GetCANStatus, HAL_CAN_OpenStreamSession,
-    HAL_CAN_ReadStreamSession, HAL_CAN_ReceiveMessage, HAL_CAN_SEND_PERIOD_NO_REPEAT,
-    HAL_CAN_SEND_PERIOD_STOP_REPEATING, HAL_CAN_SendMessage, HAL_CANMessage, HAL_CANReceiveMessage,
-    HAL_CANStreamMessage,
+    HAL_CAN_CloseStreamSession, HAL_CAN_GetCANStatus, HAL_CAN_IS_FRAME_11BIT,
+    HAL_CAN_IS_FRAME_REMOTE, HAL_CAN_OpenStreamSession, HAL_CAN_ReadStreamSession,
+    HAL_CAN_ReceiveMessage, HAL_CAN_SEND_PERIOD_NO_REPEAT, HAL_CAN_SEND_PERIOD_STOP_REPEATING,
+    HAL_CAN_SendMessage, HAL_CAN_TIMEOUT, HAL_CANMessage, HAL_CANReceiveMessage,
+    HAL_CANStreamMessage, HAL_WARN_CANSessionMux_SocketBufferFull,
+    HAL_WARN_CANSessionMux_TxQueueFull,
 };
 
 use crate::{error::HALResult, hal_call};
 
 pub type CANStreamMessage = HAL_CANStreamMessage;
+/// Send the message but do not repeat it periodically.
 pub const SEND_PERIOD_NO_REPEAT: i32 = HAL_CAN_SEND_PERIOD_NO_REPEAT as i32;
+/// Stop repeating the message.
 pub const SEND_PERIOD_STOP_REPEATING: i32 = HAL_CAN_SEND_PERIOD_STOP_REPEATING;
+/// This bit is set in the [`CANStreamMessage::messageID`] field if the frame is a remote (RTR) frame.
+pub const CAN_IS_FRAME_REMOTE: u32 = HAL_CAN_IS_FRAME_REMOTE;
+/// This bit is set in the [`CANStreamMessage::messageID`] field if the frame has an 11-bit CAN 2.0a arbitration ID.
+pub const CAN_IS_FRAME_11BIT: u32 = HAL_CAN_IS_FRAME_11BIT;
+/// Happens if the bus is disconnected. [`send_message`] again later.
+pub const ERR_SOCKET_BUFFER_FULL: i32 = HAL_WARN_CANSessionMux_SocketBufferFull as i32;
+/// Happens if the TX queue is full. [`send_message`] again later.
+pub const ERR_TX_QUEUE_FULL: i32 = HAL_WARN_CANSessionMux_TxQueueFull as i32;
+/// CAN receive has timed out
+pub const ERR_CAN_TIMEOUT: i32 = HAL_CAN_TIMEOUT;
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Debug)]

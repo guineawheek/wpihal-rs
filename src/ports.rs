@@ -1,10 +1,9 @@
 use wpihal_sys::{
     HAL_GetNumAddressableLEDs, HAL_GetNumAnalogInputs, HAL_GetNumCTREPCMModules,
     HAL_GetNumCTREPDPChannels, HAL_GetNumCTREPDPModules, HAL_GetNumCTRESolenoidChannels,
-    HAL_GetNumCounters, HAL_GetNumDigitalChannels, HAL_GetNumDigitalHeaders,
-    HAL_GetNumDigitalPWMOutputs, HAL_GetNumDutyCycles, HAL_GetNumEncoders, HAL_GetNumPWMChannels,
-    HAL_GetNumPWMHeaders, HAL_GetNumREVPDHChannels, HAL_GetNumREVPDHModules,
-    HAL_GetNumREVPHChannels, HAL_GetNumREVPHModules,
+    HAL_GetNumCounters, HAL_GetNumDigitalChannels, HAL_GetNumDigitalPWMOutputs,
+    HAL_GetNumDutyCycles, HAL_GetNumEncoders, HAL_GetNumPWMChannels, HAL_GetNumREVPDHChannels,
+    HAL_GetNumREVPDHModules, HAL_GetNumREVPHChannels, HAL_GetNumREVPHModules,
 };
 
 pub fn get_num_analog_inputs() -> i32 {
@@ -13,14 +12,6 @@ pub fn get_num_analog_inputs() -> i32 {
 
 pub fn get_num_counters() -> i32 {
     unsafe { HAL_GetNumCounters() }
-}
-
-pub fn get_num_digital_headers() -> i32 {
-    unsafe { HAL_GetNumDigitalHeaders() }
-}
-
-pub fn get_num_pwm_headers() -> i32 {
-    unsafe { HAL_GetNumPWMHeaders() }
 }
 
 pub fn get_num_digital_channels() -> i32 {

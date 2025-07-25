@@ -38,8 +38,10 @@ pub mod duty_cycle;
 pub mod encoder;
 /// HAL extensions
 pub mod extensions;
-/// I2C transactions (may freeze your rio)
+/// I2C transactions
 pub mod i2c;
+/// Integrated IMU
+pub mod imu;
 /// main loop management
 pub mod main_loop;
 /// notifiers

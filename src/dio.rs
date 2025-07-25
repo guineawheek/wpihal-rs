@@ -135,7 +135,6 @@ impl embedded_hal::digital::OutputPin for DIO {
     }
 }
 
-
 pub struct DigitalPWM(HAL_DigitalPWMHandle);
 
 impl DigitalPWM {

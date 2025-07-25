@@ -53,11 +53,7 @@ impl Drop for I2C {
 pub struct I2CError(pub i32);
 impl I2CError {
     pub fn from_code(code: i32) -> Result<(), Self> {
-        if code < 0 {
-            Err(Self(code))
-        } else {
-            Ok(())
-        }
+        if code < 0 { Err(Self(code)) } else { Ok(()) }
     }
 }
 

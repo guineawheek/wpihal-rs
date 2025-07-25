@@ -89,7 +89,7 @@ impl From<i32> for HALError {
 
 impl embedded_hal::digital::Error for HALError {
     fn kind(&self) -> embedded_hal::digital::ErrorKind {
-        embedded_hal::digital::ErrorKind::Other 
+        embedded_hal::digital::ErrorKind::Other
     }
 }
 
@@ -98,6 +98,5 @@ impl embedded_hal::pwm::Error for HALError {
         embedded_hal::pwm::ErrorKind::Other
     }
 }
-
 
 pub type HALResult<T> = Result<T, HALError>;
