@@ -35,6 +35,13 @@ impl ArtifactType {
             ArtifactType::StaticDebug => format!("{platform}staticdebug.zip"),
         }
     }
+    pub fn debug_release(&self) -> &'static str {
+        match self {
+            ArtifactType::Shared | ArtifactType::Static => "release",
+            ArtifactType::SharedDebug | ArtifactType::StaticDebug => "debug",
+            _ => ""
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -275,6 +282,7 @@ pub fn download_native_library_artifacts(
     artifact_id: &str,
     version: &str,
     buildlibs: &Path,
+    artifact_types: Option<&[ArtifactType]>,
 ) -> anyhow::Result<()> {
     let cache_marker = buildlibs.join(format!(
         ".nativeutils_downloaded_{group_id}.{artifact_id}-{version}"
@@ -286,7 +294,7 @@ pub fn download_native_library_artifacts(
     let headers_dir = buildlibs.join("headers");
     std::fs::create_dir_all(&headers_dir)?;
 
-    download_artifact_zip_to_dir(
+    if let Err(e) = download_artifact_zip_to_dir(
         platform,
         &headers_dir,
         repos,
@@ -296,16 +304,14 @@ pub fn download_native_library_artifacts(
             artifact_id,
             version,
         },
-    )
-    .unwrap();
+    ) {
+        println!("cargo::warning=Could not download headers: {e}");
+    }
+    
 
-    for (artifact_type, build_type) in [
-        (ArtifactType::Shared, "release"),
-        (ArtifactType::SharedDebug, "debug"),
-        (ArtifactType::Static, "release"),
-        (ArtifactType::StaticDebug, "debug"),
-    ] {
-        let output_dir = buildlibs.join(build_type);
+    let artifact_types = artifact_types.unwrap_or(&[ArtifactType::Shared, ArtifactType::SharedDebug, ArtifactType::Static, ArtifactType::StaticDebug]);
+    for artifact_type in artifact_types.iter().cloned() {
+        let output_dir = buildlibs.join(artifact_type.debug_release());
         std::fs::create_dir_all(&output_dir)?;
         download_artifact_zip_to_dir(
             platform,

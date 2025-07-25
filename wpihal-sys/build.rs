@@ -45,6 +45,7 @@ pub fn main() {
         "hal-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
@@ -54,39 +55,27 @@ pub fn main() {
         "wpiutil-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
     if *PLATFORM == Platform::LinuxAthena && SHARED {
-        wpilib_nativeutils::download_native_library_artifacts(
-            &repos,
-            Platform::LinuxAthena,
-            "edu.wpi.first.ni-libraries",
-            "visa",
-            NI_VERSION,
-            &buildlibs,
-        )
-        .unwrap();
-        wpilib_nativeutils::download_native_library_artifacts(
-            &repos,
-            Platform::LinuxAthena,
-            "edu.wpi.first.ni-libraries",
-            "netcomm",
-            NI_VERSION,
-            &buildlibs,
-        )
-        .unwrap();
-        wpilib_nativeutils::download_native_library_artifacts(
-            &repos,
-            Platform::LinuxAthena,
-            "edu.wpi.first.ni-libraries",
-            "chipobject",
-            NI_VERSION,
-            &buildlibs,
-        )
-        .unwrap();
-        println!("cargo:rustc-link-lib=FRC_NetworkCommunication");
-        println!("cargo:rustc-link-lib=visa");
-        println!("cargo:rustc-link-lib=RoboRIO_FRC_ChipObject");
+        for ni_lib in ["visa", "netcomm", "chipobject", "runtime"] {
+            wpilib_nativeutils::download_native_library_artifacts(
+                &repos,
+                Platform::LinuxAthena,
+                "edu.wpi.first.ni-libraries",
+                ni_lib,
+                NI_VERSION,
+                &buildlibs,
+                Some(&[ArtifactType::Shared, ArtifactType::SharedDebug])
+            )
+            .unwrap();
+        }
+        println!("cargo:rustc-link-lib=dylib:+verbatim=libFRC_NetworkCommunication.so.25.0.0");
+        println!("cargo:rustc-link-lib=dylib:+verbatim=libvisa.so.23.3.0");
+        println!("cargo:rustc-link-lib=dylib:+verbatim=libRoboRIO_FRC_ChipObject.so.25.0.0");
+        println!("cargo:rustc-link-lib=embcanshim");
+        println!("cargo:rustc-link-lib=fpgalvshim");
     }
 
     if generate_usage_reporting {
