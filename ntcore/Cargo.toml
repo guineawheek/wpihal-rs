@@ -1,0 +1,13 @@
+[package]
+name = "ntcore"
+edition = "2021"
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+bitflags = "2.9.1"
+libc = "0.2.174"
+ntcore-sys = { path = "../ntcore-sys" }
+wpiutil = { path = "../wpiutil" }

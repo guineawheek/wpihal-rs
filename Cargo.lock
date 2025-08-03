@@ -94,6 +94,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bindgen"
+version = "0.72.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f72209734318d0b619a5e0f5129918b848c416e122a3c4ce054e03cb87b726f"
+dependencies = [
+ "bitflags",
+ "cexpr",
+ "clang-sys",
+ "itertools",
+ "log",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash 2.1.1",
+ "shlex",
+ "syn",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -194,6 +214,15 @@ name = "constant_time_eq"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
+
+[[package]]
+name = "convert_case"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "cpufeatures"
@@ -851,6 +880,26 @@ checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
 dependencies = [
  "memchr",
  "minimal-lexical",
+]
+
+[[package]]
+name = "ntcore"
+version = "0.2025.3"
+dependencies = [
+ "bitflags",
+ "libc",
+ "ntcore-sys",
+ "wpiutil",
+]
+
+[[package]]
+name = "ntcore-sys"
+version = "2025.3.2"
+dependencies = [
+ "bindgen 0.72.0",
+ "convert_case",
+ "regex",
+ "wpilib-nativeutils",
 ]
 
 [[package]]
@@ -1523,6 +1572,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
 
 [[package]]
+name = "unicode-segmentation"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
+
+[[package]]
 name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1868,7 +1923,7 @@ dependencies = [
 name = "wpihal-sys"
 version = "2025.3.2"
 dependencies = [
- "bindgen",
+ "bindgen 0.70.1",
  "regex",
  "wpilib-nativeutils",
 ]
@@ -1903,7 +1958,7 @@ dependencies = [
 name = "wpiutil-sys"
 version = "2025.3.2"
 dependencies = [
- "bindgen",
+ "bindgen 0.70.1",
  "regex",
  "wpilib-nativeutils",
 ]
