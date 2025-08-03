@@ -24,13 +24,16 @@ static OUT_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
         .canonicalize()
         .unwrap()
 });
+static TARGET_DIR: LazyLock<PathBuf> = LazyLock::new(|| OUT_DIR.join("../../.."));
+
+//CARGO_TARGET_DIR
 
 pub fn main() {
     let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release);
     let wpilib_maven = wpilib_nativeutils::get_wpilib_maven(&YEAR.as_str());
     let remote_maven = wpilib_nativeutils::get_remote_maven(ReleaseTrain::Release);
     let repos = [local_maven, wpilib_maven, remote_maven];
-    let buildlibs = OUT_DIR.join("buildlibs");
+    let buildlibs = TARGET_DIR.join("buildlibs");
     let headers = buildlibs.join("headers");
 
     wpilib_nativeutils::download_native_library_artifacts(
@@ -56,9 +59,17 @@ pub fn main() {
     .unwrap();
 
     println!("cargo:rerun-if-changed=NTCoreInclude.h");
+    println!("cargo:rerun-if-changed=NTCoreShim.h");
+    println!("cargo:rerun-if-changed=ntcore_rs_shim.cpp");
     wpilib_nativeutils::rustc_link_search(&buildlibs, *PLATFORM, SHARED, *DEBUG);
     wpilib_nativeutils::rustc_debug_switch(&["ntcore", "wpiutil"], *DEBUG);
     generate_bindings_for_header(bindgen::Builder::default(), "bindings.rs");
+    cc::Build::new()
+        .cpp(true)
+        .file("ntcore_rs_shim.cpp")
+        .std("c++20")
+        .include(headers)
+        .compile("ntcore_rs_shim");
 }
 
 fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
@@ -78,13 +89,14 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
         .derive_default(true)
         .clang_arg(format!(
             "-I{}",
-            wpilib_nativeutils::stringify_path(&OUT_DIR.join("buildlibs/headers"))
+            wpilib_nativeutils::stringify_path(&TARGET_DIR.join("buildlibs/headers"))
         ))
         .clang_args(&clang_args)
         .opaque_type("std::.*")
         .allowlist_item(r"WPI_\w+")
         .allowlist_item(r"NT_\w+")
-        .allowlist_file(r"^.*ntcore_c.h$")
+        .allowlist_item(r"NTCoreRS_\w+")
+        //.allowlist_file(r"^.*ntcore_c.h$")
         //.allowlist_type(regex)
         //.allowlist_function(regex)
         //.allowlist_var(regex)
@@ -120,13 +132,10 @@ impl ParseCallbacks for NTCoreCallbacks {
 
     fn item_name(&self, item_info: bindgen::callbacks::ItemInfo) -> Option<String> {
         match item_info.name {
-            "NT_Type" |
-            "NT_EntryFlags" |
-            "NT_LogLevel" |
-            "NT_NetworkMode" |
-            "NT_EventFlags" => Some(item_info.name.to_case(convert_case::Case::Pascal)),
-            _ => None
+            "NT_Type" | "NT_EntryFlags" | "NT_LogLevel" | "NT_NetworkMode" | "NT_EventFlags" => {
+                Some(item_info.name.to_case(convert_case::Case::Pascal))
+            }
+            _ => None,
         }
     }
-
 }

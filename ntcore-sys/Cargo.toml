@@ -17,5 +17,6 @@ wpilib-nativeutils = { path = "../wpilib-nativeutils" }
 bindgen = "0.72.0"
 regex = "1.11.1"
 convert_case = "0.8.0"
+cc = "1.2"
 
 [dependencies]

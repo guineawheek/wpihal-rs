@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "complex": "cpp",
+        "streambuf": "cpp",
+        "valarray": "cpp",
+        "*.def": "cpp"
+    }
+}

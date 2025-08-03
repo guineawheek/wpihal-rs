@@ -889,7 +889,6 @@ dependencies = [
  "bitflags",
  "libc",
  "ntcore-sys",
- "wpiutil",
 ]
 
 [[package]]
@@ -897,6 +896,7 @@ name = "ntcore-sys"
 version = "2025.3.2"
 dependencies = [
  "bindgen 0.72.0",
+ "cc",
  "convert_case",
  "regex",
  "wpilib-nativeutils",

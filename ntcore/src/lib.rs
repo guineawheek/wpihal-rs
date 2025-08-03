@@ -1,142 +1,241 @@
 //! # ntcore -- NetworkTables support.
-//! 
+//!
 //! This directly wraps the NetworkTables `ntcore` library.
-//! 
+//!
 //! ## Performance
-//! 
-//! Given that at its core `ntcore` is a C++ library and this is a Rust library binding to its C interface 
-//! there is a compromise made for usability over performance.
-//! 
-//! In practice, this means that `ntcore` itself will often allocate buffers between the C api and its own internals
-//! while this Rust library will often allocate buffers so they conform to Rust's semantics.
-//! This is mostly irrelevant for primitives like integers and floats, but may be more apparent for strings
-//! and arrays, which need allocation to copy from [`Vec`]s and [`String`]s to `std::vector` and `WPI_String`.
-//! 
+//!
+//! Given that at its core `ntcore` is a C++ library and this is a Rust library, there is a compromise made
+//! for usability over performance.
+//!
+//! Namely, data returned from the C++ API will get copied into a [`Vec`], rather than directly used.
+//!
+//! This is still faster than using the C API, which tends towards undermaintained and ends up allocating an intermediate buffer
+//! that we'd have to copy a 2nd time into a [`Vec`] or [`String`].
+//!
 //! If you want the absolute best possible performance, use a pure Rust library.
+//!
+//! ## Thread safety
+//! All calls are thread safe, hence general use of `&self`.
+//!
+//! ## Memory safety
+//!
+//! Memory passed in and out through FFI should remain valid, and returned data should always be owned by Rust.
+//!
+//! Just...don't look too hard at the guts, alright?
+#![warn(missing_docs)]
 
-use ntcore_sys::{NT_Entry, NT_Inst, NT_Topic, NT_Value, WPI_String};
-use wpiutil::wpistring::WPIString;
+use std::mem::ManuallyDrop;
 
-trait ToWpiString {
-    fn to_wpistring(self) -> WPIString;
+use ntcore_sys::{
+    NTCoreRS_Value, NT_DestroyInstance, NT_Entry, NT_Handle, NT_Inst, NT_Topic, NT_Value,
+    WPI_String,
+};
+
+macro_rules! new_vec {
+    ($t: ty, $data:expr, $count:expr) => {{
+        if $data.is_null() {
+            return ManuallyDrop::new(vec![<$t>::default(); $count]).into();
+        }
+        let mut v = ManuallyDrop::new(Vec::<$t>::with_capacity($count));
+        core::ptr::copy_nonoverlapping($data as *const $t, v.as_mut_ptr(), $count);
+        v.set_len($count);
+        v.into()
+    }};
 }
-trait ToWpiStringSys {
-    fn to_wpistring_sys(&self) -> &WPI_String;
-}
 
-impl ToWpiString for WPI_String {
-    fn to_wpistring(self) -> WPIString {
-        WPIString::from_raw(
-            // SAFETY: these are derived from the same struct so these should have the same layout
-            unsafe { core::mem::transmute(self) }
-        )
-    }
-}
-
-impl ToWpiStringSys for WPIString {
-    fn to_wpistring_sys(&self) -> &WPI_String {
-        unsafe {
-            core::mem::transmute(self.as_raw())
+/// This function gets passed to the C++ shim to allocate and disassemble [`Vec`]s.
+unsafe extern "C" fn ntcore_rs_alloc_vec(
+    atype: ntcore_sys::NTCoreRS_AllocType,
+    data: *const libc::c_void,
+    count: usize,
+) -> ntcore_sys::NTCoreRS_Vec {
+    unsafe {
+        match atype {
+            ntcore_sys::NTCoreRS_AllocType::Bool => {
+                if data.is_null() {
+                    return ManuallyDrop::new(vec![bool::default(); count]).into();
+                }
+                let mut v = ManuallyDrop::new(Vec::<bool>::with_capacity(count));
+                let data = data as *const ntcore_sys::NT_Bool;
+                for (i, ent) in v.spare_capacity_mut().iter_mut().enumerate() {
+                    ent.write(data.add(i).read() != 0);
+                }
+                v.set_len(count);
+                v.into()
+            }
+            ntcore_sys::NTCoreRS_AllocType::Double => new_vec!(f64, data, count),
+            ntcore_sys::NTCoreRS_AllocType::Char => new_vec!(libc::c_char, data, count),
+            ntcore_sys::NTCoreRS_AllocType::Integer => new_vec!(i64, data, count),
+            ntcore_sys::NTCoreRS_AllocType::Float => new_vec!(f32, data, count),
+            ntcore_sys::NTCoreRS_AllocType::String => {
+                if data.is_null() {
+                    return ManuallyDrop::new(vec![String::default(); count]).into();
+                }
+                let mut v = ManuallyDrop::new(Vec::<String>::with_capacity(count));
+                let data = data as *const ntcore_sys::WPI_String;
+                for (i, ent) in v.spare_capacity_mut().iter_mut().enumerate() {
+                    let v = data.add(i).read();
+                    let s = str::from_utf8_unchecked(core::slice::from_raw_parts(
+                        v.str_ as *const u8,
+                        v.len,
+                    ))
+                    .to_string();
+                    ent.write(s);
+                }
+                v.set_len(count);
+                v.into()
+            }
+            ntcore_sys::NTCoreRS_AllocType::Value => {
+                new_vec!(ntcore_sys::NTCoreRS_Value, data, count)
+            }
+            ntcore_sys::NTCoreRS_AllocType::Handle => new_vec!(ntcore_sys::NT_Handle, data, count),
         }
     }
 }
 
-fn none_if<T>(predicate: bool, value: T) -> Option<T> {
-    if predicate { None } else { Some(value) }
+unsafe extern "C" fn ntcore_rs_readqueue_construct(
+    conv: ntcore_sys::NTCoreRS_Value_Convert,
+    arr: *const libc::c_void,
+    count: usize,
+) -> ntcore_sys::NTCoreRS_Vec {
+    let mut v = ManuallyDrop::new(Vec::<NtValue>::with_capacity(count));
+    let arr = arr as *const ntcore_sys::NTCoreRS_Value;
+    let Some(conv) = conv else {
+        return ntcore_sys::NTCoreRS_Vec {
+            data: v.as_mut_ptr() as *mut libc::c_char,
+            len: v.len(),
+            capacity: v.capacity(),
+        };
+    };
+    for (i, ent) in v.spare_capacity_mut().iter_mut().enumerate() {
+        ent.write(conv(VEC_ALLOC, arr.add(i) as *const libc::c_void).into());
+    }
+
+    ntcore_sys::NTCoreRS_Vec {
+        data: v.as_mut_ptr() as *mut libc::c_char,
+        len: v.len(),
+        capacity: v.capacity(),
+    }
 }
 
+unsafe extern "C" fn ntcore_rs_insttopicinfo_construct(
+    conv: ntcore_sys::NTCoreRS_TopicInfo_Convert,
+    arr: *const libc::c_void,
+    count: usize,
+) -> ntcore_sys::NTCoreRS_Vec {
+    let mut v = ManuallyDrop::new(Vec::<NtTopicInfo>::with_capacity(count));
+    let arr = arr as *const ntcore_sys::NTCoreRS_Value;
+    let Some(conv) = conv else {
+        return ntcore_sys::NTCoreRS_Vec {
+            data: v.as_mut_ptr() as *mut libc::c_char,
+            len: v.len(),
+            capacity: v.capacity(),
+        };
+    };
+    for (i, ent) in v.spare_capacity_mut().iter_mut().enumerate() {
+        ent.write(conv(VEC_ALLOC, arr.add(i) as *const libc::c_void).into());
+    }
+
+    ntcore_sys::NTCoreRS_Vec {
+        data: v.as_mut_ptr() as *mut libc::c_char,
+        len: v.len(),
+        capacity: v.capacity(),
+    }
+}
+
+const VEC_ALLOC: ntcore_sys::NTCoreRS_Allocator = Some(ntcore_rs_alloc_vec);
+
+fn none_if<T>(predicate: bool, value: T) -> Option<T> {
+    if predicate {
+        None
+    } else {
+        Some(value)
+    }
+}
 
 pub use ntcore_sys::NtType;
+
 /// Holds a NetworkTables value.
+#[derive(Debug, Clone, PartialEq)]
 pub struct NtValue {
+    /// The last time the value was changed in milliseconds.
     pub last_change: i64,
+    /// The server time in milliseconds.
     pub server_time: i64,
+    /// The actual value of the data.
     pub value: NtValueData,
 }
 
-impl From<&NT_Value> for NtValue {
-    fn from(value: &NT_Value) -> Self {
+impl From<NTCoreRS_Value> for NtValue {
+    fn from(value: NTCoreRS_Value) -> Self {
         let ret = Self {
             last_change: value.last_change,
             server_time: value.server_time,
-            value: NtValueData::from(value),
+            value: unsafe {
+                match value.type_ {
+                    NtType::Unassigned => NtValueData::Unassigned,
+                    NtType::Boolean => NtValueData::Boolean(value.data.v_boolean),
+                    NtType::Double => NtValueData::Double(value.data.v_double),
+                    NtType::String => NtValueData::String(value.data.buf.into()),
+                    NtType::Raw => NtValueData::Raw(value.data.buf.into()),
+                    NtType::BooleanArray => NtValueData::BooleanArray(value.data.buf.into()),
+                    NtType::DoubleArray => NtValueData::DoubleArray(value.data.buf.into()),
+                    NtType::StringArray => NtValueData::StringArray(value.data.buf.into()),
+                    NtType::Rpc => NtValueData::Rpc(value.data.buf.into()),
+                    NtType::Integer => NtValueData::Integer(value.data.v_int),
+                    NtType::Float => NtValueData::Float(value.data.v_float),
+                    NtType::IntegerArray => NtValueData::IntegerArray(value.data.buf.into()),
+                    NtType::FloatArray => NtValueData::FloatArray(value.data.buf.into()),
+                }
+            },
         };
         ret
     }
 }
 
-
-macro_rules! mk_slice {
-    ($field:expr, $ptr_ty:ty) => {
-        core::slice::from_raw_parts(($field).arr as *const $ptr_ty, ($field).size)
-    };
-}
-
 /// NetworkTables value data, in Rust types.
+/// These do not hold any foreign memory.
 #[derive(Debug, Clone, PartialEq)]
 pub enum NtValueData {
+    /// Unassigned/invalid
     Unassigned,
+    /// boolean
     Boolean(bool),
+    /// double
     Double(f64),
+    /// string
     String(String),
+    /// raw vector
     Raw(Vec<u8>),
+    /// boolean array
     BooleanArray(Vec<bool>),
+    /// double array
     DoubleArray(Vec<f64>),
+    /// string array
     StringArray(Vec<String>),
+    /// RPC data
     Rpc(Vec<u8>),
+    /// int64 (not supported on all implementations)
     Integer(i64),
+    /// float32 (not supported on all implementations)
     Float(f32),
+    /// int64 array
     IntegerArray(Vec<i64>),
+    /// float array
     FloatArray(Vec<f32>),
 }
 
-impl From<&NT_Value> for NtValueData {
-    fn from(value: &NT_Value) -> Self {
-        unsafe {
-            match value.type_ {
-                NtType::Unassigned => NtValueData::Unassigned,
-                NtType::Boolean => NtValueData::Boolean(value.data.v_boolean != 0),
-                NtType::Double => NtValueData::Double(value.data.v_double),
-                NtType::String => NtValueData::String(value.data.v_string.to_wpistring().to_string()),
-                NtType::Raw => {
-                    let data = core::slice::from_raw_parts(value.data.v_raw.data as *const u8, value.data.v_raw.size);
-                    NtValueData::Raw(data.to_vec())
-                }
-                NtType::BooleanArray => {
-                    //let data = core::slice::from_raw_parts(value.data.arr_boolean.arr as *const i32, value.data.arr_boolean.size);
-                    NtValueData::BooleanArray(mk_slice!(value.data.arr_boolean, i32).iter().map(|&v| v != 0).collect())
-                }
-                NtType::DoubleArray => {
-                    NtValueData::DoubleArray(mk_slice!(value.data.arr_double, f64).to_vec())
-                }
-                NtType::StringArray => {
-                    let data = mk_slice!(value.data.arr_string, WPI_String);
-                    NtValueData::StringArray(data.iter().map(|s| s.to_wpistring().to_string()).collect())
-                }
-                NtType::Rpc => {
-                    let data = core::slice::from_raw_parts(value.data.v_raw.data as *const u8, value.data.v_raw.size);
-                    NtValueData::Rpc(data.to_vec())
-                }
-                NtType::Integer => NtValueData::Integer(value.data.v_int),
-                NtType::Float => NtValueData::Float(value.data.v_float),
-                NtType::IntegerArray => NtValueData::IntegerArray(mk_slice!(value.data.arr_int, i64).to_vec()),
-                NtType::FloatArray => NtValueData::FloatArray(mk_slice!(value.data.arr_float, f32).to_vec()),
-            }
-        }
-    }
-}
-
 impl NtValueData {
-    /// Creates a raw [`NT_Value`] structure.
-    /// 
+    /// Creates a raw [`NT_Value`] structure for use when setting data, and returns a guard to ensure its validity.
+    ///
     /// Note that the FFI calls that take this will ostensibly copy the data into its own structures.
-    /// 
+    ///
     /// Ostensibly.
     pub fn as_nt_value<'a>(&'a self) -> NtValueDataGuard<'a> {
         type NtValueUnion = ntcore_sys::NT_Value__bindgen_ty_1;
         let mut data: NtValueUnion = NtValueUnion::default();
         let mut storage = ArrayStorage::None;
-        
+
         match self {
             NtValueData::Unassigned => {}
             NtValueData::Boolean(v) => {
@@ -164,7 +263,6 @@ impl NtValueData {
                     size: arr.len(),
                 };
                 storage = ArrayStorage::Boolean(arr);
-
             }
             NtValueData::DoubleArray(items) => {
                 data.arr_double = ntcore_sys::NT_Value__bindgen_ty_1__bindgen_ty_3 {
@@ -173,9 +271,13 @@ impl NtValueData {
                 };
             }
             NtValueData::StringArray(items) => {
-                let arr: Vec<WPI_String> = items.iter().map(|v| {
-                    WPI_String { str_: v.as_ptr() as *const libc::c_char, len: v.as_bytes().len() }
-                }).collect();
+                let arr: Vec<WPI_String> = items
+                    .iter()
+                    .map(|v| WPI_String {
+                        str_: v.as_ptr() as *const libc::c_char,
+                        len: v.as_bytes().len(),
+                    })
+                    .collect();
                 data.arr_string = ntcore_sys::NT_Value__bindgen_ty_1__bindgen_ty_6 {
                     arr: arr.as_ptr() as *mut WPI_String,
                     size: arr.len(),
@@ -202,20 +304,20 @@ impl NtValueData {
             }
         };
 
-
         NtValueDataGuard {
             _r: self,
             _storage: storage,
             nt_value: NT_Value {
-                type_: self.value_type(),
+                type_: self.nt_type(),
                 last_change: 0,
                 server_time: 0,
                 data,
-            }
+            },
         }
     }
 
-    pub fn value_type(&self) -> NtType {
+    /// Returns the [`NtType`] of the data.
+    pub fn nt_type(&self) -> NtType {
         match self {
             Self::Unassigned => NtType::Unassigned,
             Self::Boolean(_) => NtType::Boolean,
@@ -229,12 +331,12 @@ impl NtValueData {
             Self::Integer(_) => NtType::Integer,
             Self::Float(_) => NtType::Float,
             Self::IntegerArray(_) => NtType::IntegerArray,
-            Self::FloatArray(_) => NtType::FloatArray
+            Self::FloatArray(_) => NtType::FloatArray,
         }
     }
 }
 
-/// the whole point is to keep the underlying Vecs alive while the data guard is alive.
+/// Holds vec data for NT_Value
 #[allow(unused)]
 #[derive(Debug)]
 enum ArrayStorage {
@@ -243,8 +345,8 @@ enum ArrayStorage {
     String(Vec<WPI_String>),
 }
 
-/// This is intended to be plugged into raw C calls.
-/// 
+/// Ensures that a referentiable [`NT_Value`] holds valid pointers.
+///
 /// # Safety
 /// The returned [`NT_Value`] must not outlive the calling structure within FFI, and must not be mutated.
 pub struct NtValueDataGuard<'a> {
@@ -259,100 +361,89 @@ impl<'a> AsRef<NT_Value> for NtValueDataGuard<'a> {
     }
 }
 
-/// Iterator over an NT value queue
-#[derive(Debug, PartialEq, Eq)]
-pub struct NtValueQueueIter<'a> {
-    q: &'a NtValueQueue,
-    i: usize
-}
-
-impl<'a> Iterator for NtValueQueueIter<'a> {
-    type Item = NtValue;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.i >= self.q.count {
-            None
-        } else {
-            let value = unsafe { self.q.ptr.add(self.i).read() };
-            self.i += 1;
-            Some(NtValue::from(&value))
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct NtValueQueue {
-    ptr: *mut NT_Value,
-    count: usize,
-}
-
-impl NtValueQueue {
-    pub fn iter<'a>(&'a self) -> NtValueQueueIter<'a> {
-        NtValueQueueIter { q: self, i: 0 }
-    }
-}
-
-unsafe impl Send for NtValueQueue {}
-impl Drop for NtValueQueue {
-    fn drop(&mut self) {
-        unsafe {
-            ntcore_sys::NT_DisposeValueArray(self.ptr, self.count);
-        }
-    }
-}
-
-pub struct Handle {}
-
 bitflags::bitflags! {
+    /// Bitflag of NT entry params.
     pub struct NtEntryFlags : u32 {
+        /// Persistent
         const PERSISTENT = ntcore_sys::NtEntryFlags::Persistent as u32;
+        /// Retained
         const RETAINED = ntcore_sys::NtEntryFlags::Retained as u32;
+        /// Uncached
         const UNCACHED = ntcore_sys::NtEntryFlags::Uncached as u32;
     }
 }
 
+bitflags::bitflags! {
+    /// Bitflag of possible [`NtType`]s that could be considered valid.
+    pub struct NtTypeSet: u32 {
+        /// Unassigned
+        const UNASSIGNED = ntcore_sys::NtType::Unassigned as u32;
+        /// Boolean
+        const BOOLEAN = ntcore_sys::NtType::Boolean as u32;
+        /// Double
+        const DOUBLE = ntcore_sys::NtType::Double as u32;
+        /// String
+        const STRING = ntcore_sys::NtType::String as u32;
+        /// Raw
+        const RAW = ntcore_sys::NtType::Raw as u32;
+        /// Boolean array
+        const BOOLEAN_ARRAY = ntcore_sys::NtType::BooleanArray as u32;
+        /// Double array
+        const DOUBLE_ARRAY = ntcore_sys::NtType::DoubleArray as u32;
+        /// String array
+        const STRING_ARRAY = ntcore_sys::NtType::StringArray as u32;
+        /// RPC
+        const RPC = ntcore_sys::NtType::Rpc as u32;
+        /// Int64
+        const INTEGER = ntcore_sys::NtType::Integer as u32;
+        /// Float
+        const FLOAT = ntcore_sys::NtType::Float as u32;
+        /// Integer array
+        const INTEGER_ARRAY = ntcore_sys::NtType::IntegerArray as u32;
+        /// Float array
+        const FLOAT_ARRAY = ntcore_sys::NtType::FloatArray as u32;
+    }
+}
+
+/// A NetworkTables sentry.
+#[repr(transparent)]
 pub struct NtEntry(NT_Entry);
 
 impl NtEntry {
     /// Gets the name of the entry.
     /// Returns [`None`] it's an invalid handle.
-    pub fn name(&self) -> Option<WPIString> {
-        let mut wpi_str = WPI_String::default();
-        unsafe {
-            ntcore_sys::NT_GetEntryName(self.0, &mut wpi_str);
-        }
-        let s = wpi_str.to_wpistring();
+    pub fn name(&self) -> Option<String> {
+        let s: String = unsafe { ntcore_sys::NTCoreRS_GetEntryName(self.0, VEC_ALLOC).into() };
         none_if(s.is_empty(), s)
     }
 
     /// Gets the type for the specified key, if existant.
     pub fn entry_type(&self) -> NtType {
+        // thin wrapper over nt::GetEntryType
         unsafe { ntcore_sys::NT_GetEntryType(self.0) }
     }
 
     /// Gets the last time the entry was changed, or [`None`] if the handle is invalid.
     pub fn last_changed(&self) -> Option<u64> {
+        // thin wrapper over nt::GetEntryLastChange
         let v = unsafe { ntcore_sys::NT_GetEntryLastChange(self.0) };
         none_if(v == 0, v)
     }
 
     /// Gets the value for the entry.
-    /// 
+    ///
     /// If unassigned or invalid, this will return a value with [`NtValueData::Unassigned`].
     pub fn value(&self) -> NtValue {
-        let mut value = NT_Value::default();
-        unsafe { ntcore_sys::NT_GetEntryValue(self.0, &mut value); }
-        let ret = NtValue::from(&value);
-        unsafe { ntcore_sys::NT_DisposeValue(&mut value); }
-        ret
+        unsafe { ntcore_sys::NTCoreRS_GetEntryValue(self.0, VEC_ALLOC).into() }
     }
 
     /// Sets the default entry value.
-    /// 
+    ///
     /// Returns true if success, false on "name already exists"
-    /// 
+    ///
     /// This is thread-safe.
     pub fn set_default_value(&self, value: &NtValueData) -> bool {
+        // existentially ok with using ConvertFromC
         unsafe {
             let guard = value.as_nt_value();
             ntcore_sys::NT_SetDefaultEntryValue(self.0, guard.as_ref()) != 0
@@ -360,9 +451,9 @@ impl NtEntry {
     }
 
     /// Sets the entry value.
-    /// 
+    ///
     /// Returns true if success, false on type mismatch.
-    /// 
+    ///
     /// This is thread-safe.
     pub fn set_value(&self, value: &NtValueData) -> bool {
         unsafe {
@@ -380,26 +471,35 @@ impl NtEntry {
 
     /// Gets the entry flags set on this entry.
     pub fn get_flags(&self) -> NtEntryFlags {
-        unsafe {
-            NtEntryFlags::from_bits_retain(ntcore_sys::NT_GetEntryFlags(self.0))
-        }
+        unsafe { NtEntryFlags::from_bits_retain(ntcore_sys::NT_GetEntryFlags(self.0)) }
     }
 
     /// Returns new entry values since last call.
-    pub fn read_queue_value(&self) -> NtValueQueue {
-        // what the hell is an "subscriber or entry handle"
-        // oh nvm lol
-        let mut count = 0;
+    pub fn read_queue_value(&self) -> Vec<NtValue> {
         unsafe {
-            let ptr = ntcore_sys::NT_ReadQueueValue(self.0, &mut count);
-            NtValueQueue { ptr, count }
+            let ret = ntcore_sys::NTCoreRS_ReadQueueValue(
+                self.0,
+                0,
+                VEC_ALLOC,
+                Some(ntcore_rs_readqueue_construct),
+            );
+            Vec::from_raw_parts(ret.data as *mut NtValue, ret.len, ret.capacity)
         }
+    }
+
+    pub fn exists(&self) -> bool {
+        unsafe { ntcore_sys::NT_GetTopicExists(self.0) != 0 }
     }
 }
 
+fn str_pair(s: &str) -> (*const libc::c_char, usize) {
+    (s.as_ptr() as *const libc::c_char, s.len())
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct NtInstance {
     handle: NT_Inst,
-    droppable: bool
+    droppable: bool,
 }
 
 impl Default for NtInstance {
@@ -420,9 +520,11 @@ impl NtInstance {
     }
     // NT_GetInstanceFromHandle
 
+    /// Getes an entry by name, if it exists
     pub fn get_entry(&self, name: &str) -> Option<NtEntry> {
         let entry = unsafe {
-            ntcore_sys::NT_GetEntry(self.handle, WPIString::from_str(name).to_wpistring_sys())
+            let (name_ptr, name_len) = str_pair(name);
+            ntcore_sys::NTCoreRS_GetEntry(self.handle, name_ptr, name_len)
         };
         if entry != 0 {
             Some(NtEntry(entry))
@@ -431,31 +533,219 @@ impl NtInstance {
         }
     }
 
-    pub fn get_topics(&self, prefix: &str, types: impl Iterator<Item = NtType>) -> Vec<NtTopic> {
-        let nt_type: libc::c_uint = types.fold(0, |acc, elem| {
-            acc | elem as libc::c_uint
-        });
+    pub fn get_topic(&self, name: &str) -> Option<NtTopic> {
+        let topic = unsafe {
+            let (name_ptr, name_len) = str_pair(name);
+            ntcore_sys::NTCoreRS_GetTopic(self.handle, name_ptr, name_len)
+        };
+        if topic != 0 {
+            Some(NtTopic(topic))
+        } else {
+            None
+        }
+    }
 
-        let prefix_str = WPIString::from_str(prefix);
-        let mut count = 0;
+    /// Gets topics matching the name prefix and type set
+    pub fn get_topics(&self, prefix: &str, types: NtTypeSet) -> Vec<NtTopic> {
         unsafe {
-            let topics = ntcore_sys::NT_GetTopics(self.handle, prefix_str.to_wpistring_sys(), nt_type, &mut count);
-            let ret = core::slice::from_raw_parts(topics, count).iter().cloned().map(NtTopic).collect()
-            ntcore_sys::NT_DisposeTopicInfo(info);
-            ret
+            let (prefix_ptr, prefix_len) = str_pair(prefix);
+            let res: Vec<NT_Handle> = ntcore_sys::NTCoreRS_GetTopics(
+                self.handle,
+                prefix_ptr,
+                prefix_len,
+                types.bits(),
+                VEC_ALLOC,
+            )
+            .into();
+            // SAFETY: NT_Handle and NtTopic are the same repr.
+            core::mem::transmute(res)
+        }
+    }
+
+    /// Gets topics matching the name prefix and type strings
+    pub fn get_topics_str(
+        &self,
+        prefix: &str,
+        types: impl IntoIterator<Item: AsRef<str>>,
+    ) -> Vec<NtTopic> {
+        let types_vec: Vec<WPI_String> = types
+            .into_iter()
+            .map(|s| {
+                let (str_, len) = str_pair(s.as_ref());
+                WPI_String { str_, len }
+            })
+            .collect();
+
+        unsafe {
+            let (prefix_ptr, prefix_len) = str_pair(prefix);
+            let res: Vec<NT_Handle> = ntcore_sys::NTCoreRS_GetTopicsStr(
+                self.handle,
+                prefix_ptr,
+                prefix_len,
+                types_vec.as_ptr(),
+                types_vec.len(),
+                VEC_ALLOC,
+            )
+            .into();
+            // SAFETY: NT_Handle and NtTopic are the same repr.
+            core::mem::transmute(res)
+        }
+    }
+
+    /// Gets topic info matching the name prefix and type set
+    ///
+    /// This double-allocates but honestly it doesn't matter given how much the function overall allocates
+    pub fn get_topic_infos(&self, prefix: &str, types: NtTypeSet) -> Vec<NtTopicInfo> {
+        unsafe {
+            let (prefix_ptr, prefix_len) = str_pair(prefix);
+            let res: Vec<ntcore_sys::NTCoreRS_TopicInfo> = ntcore_sys::NTCoreRS_GetTopicInfos(
+                self.handle,
+                prefix_ptr,
+                prefix_len,
+                types.bits(),
+                VEC_ALLOC,
+                Some(ntcore_rs_insttopicinfo_construct),
+            )
+            .into();
+            res.into_iter().map(Into::into).collect()
+        }
+    }
+
+    /// Gets topic info matching the name prefix and type strings
+    ///
+    /// This double-allocates but honestly it doesn't matter given how much the function overall allocates
+    pub fn get_topic_infos_str(
+        &self,
+        prefix: &str,
+        types: impl IntoIterator<Item: AsRef<str>>,
+    ) -> Vec<NtTopicInfo> {
+        let types_vec: Vec<WPI_String> = types
+            .into_iter()
+            .map(|s| {
+                let (str_, len) = str_pair(s.as_ref());
+                WPI_String { str_, len }
+            })
+            .collect();
+        unsafe {
+            let (prefix_ptr, prefix_len) = str_pair(prefix);
+            let res: Vec<ntcore_sys::NTCoreRS_TopicInfo> = ntcore_sys::NTCoreRS_GetTopicInfosStr(
+                self.handle,
+                prefix_ptr,
+                prefix_len,
+                types_vec.as_ptr(),
+                types_vec.len(),
+                VEC_ALLOC,
+                Some(ntcore_rs_insttopicinfo_construct),
+            )
+            .into();
+            res.into_iter().map(Into::into).collect()
         }
     }
 }
 
-pub struct NtTopic(NT_Topic);
-
-impl NtTopic {
+impl Drop for NtInstance {
+    fn drop(&mut self) {
+        if self.droppable {
+            unsafe {
+                NT_DestroyInstance(self.handle);
+            }
+        }
+    }
 }
 
 pub struct NtTopicInfo {
+    /// topic handle
     pub topic: NtTopic,
+    /// name
     pub name: String,
+    /// data type
     pub data_type: NtType,
+    /// type string
     pub type_str: String,
+    /// properties (json)
     pub properties: String,
+}
+
+impl From<ntcore_sys::NTCoreRS_TopicInfo> for NtTopicInfo {
+    fn from(value: ntcore_sys::NTCoreRS_TopicInfo) -> Self {
+        unsafe {
+            Self {
+                topic: NtTopic(value.topic),
+                name: String::from_raw_parts(
+                    value.name.data as *mut u8,
+                    value.name.len,
+                    value.name.capacity,
+                ),
+                data_type: value.type_,
+                type_str: String::from_raw_parts(
+                    value.type_str.data as *mut u8,
+                    value.type_str.len,
+                    value.type_str.capacity,
+                ),
+                properties: String::from_raw_parts(
+                    value.properties.data as *mut u8,
+                    value.properties.len,
+                    value.properties.capacity,
+                ),
+            }
+        }
+    }
+}
+
+#[repr(transparent)]
+pub struct NtTopic(NT_Topic);
+
+impl NtTopic {
+    pub fn get_topic_info(&self) -> NtTopicInfo {
+        unsafe { ntcore_sys::NTCoreRS_GetTopicInfo(self.0, VEC_ALLOC).into() }
+    }
+
+    pub fn name(&self) -> String {
+        unsafe { ntcore_sys::NTCoreRS_GetTopicName(self.0, VEC_ALLOC).into() }
+    }
+
+    pub fn nt_type(&self) -> NtType {
+        unsafe { ntcore_sys::NT_GetTopicType(self.0) }
+    }
+
+    pub fn nt_type_string(&self) -> String {
+        unsafe { ntcore_sys::NT_GetTopicTypeString(self.0, VEC_ALLOC).into() }
+    }
+
+    pub fn persistant(&self) -> bool {
+        unsafe { ntcore_sys::NT_GetTopicPersistent(self.0) != 0 }
+    }
+
+    pub fn retained(&self) -> bool {
+        unsafe { ntcore_sys::NT_GetTopicRetained(self.0) != 0 }
+    }
+
+    pub fn cached(&self) -> bool {
+        unsafe { ntcore_sys::NT_GetTopicCached(self.0) != 0 }
+    }
+
+    pub fn set_persistant(&self, v: bool) {
+        unsafe {
+            ntcore_sys::NT_SetTopicPersistent(self.0, v as i32);
+        }
+    }
+
+    pub fn set_retained(&self, v: bool) {
+        unsafe {
+            ntcore_sys::NT_SetTopicRetained(self.0, v as i32);
+        }
+    }
+
+    pub fn set_cached(&self, v: bool) {
+        unsafe {
+            ntcore_sys::NT_SetTopicCached(self.0, v as i32);
+        }
+    }
+
+    pub fn exists(&self) -> bool {
+        unsafe { ntcore_sys::NT_GetTopicExists(self.0) != 0 }
+    }
+    // get, set, delete, property
+    // get all properties, set all properties
+    // need to also version buildlibs so it doesn't stomp on multiple versions of same crate
 }
