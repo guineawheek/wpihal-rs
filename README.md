@@ -1,6 +1,6 @@
 # wpihal-rs
 
-Safe-enough™️ WPILib HAL bindings in Rust
+Safe-enough™ WPILib HAL bindings in Rust
 
 ## Installation
 
