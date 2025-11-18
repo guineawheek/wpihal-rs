@@ -10,7 +10,7 @@ use std::{
 use bindgen::callbacks::ParseCallbacks;
 use wpilib_nativeutils::{Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain};
 
-const NI_VERSION: &'static str = "2025.2.0";
+const NI_VERSION: &'static str = "2026.1.0";
 static VERSION: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
 static YEAR: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION_MAJOR").unwrap());
 static PLATFORM: LazyLock<Platform> = LazyLock::new(|| {
