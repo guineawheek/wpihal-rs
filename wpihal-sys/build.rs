@@ -71,9 +71,9 @@ pub fn main() {
             )
             .unwrap();
         }
-        println!("cargo:rustc-link-lib=dylib:+verbatim=libFRC_NetworkCommunication.so.25.0.0");
+        println!("cargo:rustc-link-lib=dylib:+verbatim=libFRC_NetworkCommunication.so.26.0.0");
         println!("cargo:rustc-link-lib=dylib:+verbatim=libvisa.so.23.3.0");
-        println!("cargo:rustc-link-lib=dylib:+verbatim=libRoboRIO_FRC_ChipObject.so.25.0.0");
+        println!("cargo:rustc-link-lib=dylib:+verbatim=libRoboRIO_FRC_ChipObject.so.26.0.0");
         println!("cargo:rustc-link-lib=embcanshim");
         println!("cargo:rustc-link-lib=fpgalvshim");
     }
