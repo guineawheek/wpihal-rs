@@ -65,6 +65,8 @@ impl<'a> AnalogAccumulator<'a> {
     }
 
     pub unsafe fn raw_handle(&self) -> HAL_AnalogInputHandle {
-        self.0.raw_handle()
+        unsafe {
+            self.0.raw_handle()
+        }
     }
 }

@@ -1,6 +1,6 @@
 # wpihal-rs
 
-Safe-enough™️ WPILib HAL bindings in Rust
+Safe-enough™ WPILib HAL bindings in Rust
 
 ## Installation
 
@@ -10,13 +10,13 @@ As such, you can add `wpihal` as a git dependency to your project toml:
 
 ```toml
 [dependencies]
-wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git", branch = "2025" }
+wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git", branch = "2026" }
 ```
 
 I recommend pinning to a specific commit or branch.
 **The API may change at a moment's notice,** although it is starting to stabilize. Ish.
 
-To accelerate build times, you should also install the version of WPILib corresponding to this package's version; in this case **v2025.3.2**;
+To accelerate build times, you should also install the version of WPILib corresponding to this package's version; in this case **v2026.1.1-beta-1**;
 as the build scripts first search your computer for the WPILib Maven artifacts before trying to download them externally.
 
 ## Why just the HAL?
