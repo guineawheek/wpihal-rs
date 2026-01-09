@@ -6,10 +6,10 @@ use std::{
 use error::{HALError, HALResult};
 use wpihal_sys::{
     HAL_ExpandFPGATime, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount,
-    HAL_GetFPGATime, HAL_GetFPGAVersion, HAL_GetLastError, HAL_GetRSLState, HAL_GetRuntimeType,
-    HAL_GetSerialNumber, HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond,
-    HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize, HAL_RuntimeType, HAL_Shutdown,
-    HAL_SimPeriodicAfter, HAL_SimPeriodicBefore, WPI_String,
+    HAL_GetFPGATime, HAL_GetLastError, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber,
+    HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond, HAL_GetSystemTimeValid,
+    HAL_GetTeamNumber, HAL_Initialize, HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter,
+    HAL_SimPeriodicBefore, WPI_String,
 };
 use wpiutil::wpistring::WPIString;
 
@@ -122,10 +122,6 @@ pub fn get_last_error() -> (HALError, String) {
         let cs = CStr::from_ptr(HAL_GetLastError(&mut status));
         (HALError(status), cs.to_string_lossy().to_string())
     }
-}
-
-pub fn get_fpga_version() -> HALResult<i32> {
-    hal_call!(HAL_GetFPGAVersion())
 }
 
 pub fn get_serial_number() -> WPIString {
