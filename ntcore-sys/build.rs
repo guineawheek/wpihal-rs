@@ -47,6 +47,7 @@ pub fn main() {
         "wpiutil-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
@@ -56,6 +57,7 @@ pub fn main() {
         "ntcore-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
 

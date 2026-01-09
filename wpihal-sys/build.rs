@@ -10,6 +10,7 @@ use std::{
 use bindgen::{RustTarget, callbacks::ParseCallbacks};
 use wpilib_nativeutils::{Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain};
 
+const NI_VERSION: &'static str = "2026.1.0";
 static VERSION: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
 static YEAR: LazyLock<String> = LazyLock::new(|| "2027_alpha1".to_string());
 static PLATFORM: LazyLock<Platform> = LazyLock::new(|| {
@@ -47,6 +48,7 @@ pub fn main() {
         "hal-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
@@ -56,6 +58,7 @@ pub fn main() {
         "wpiutil-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
@@ -65,6 +68,7 @@ pub fn main() {
         "ntcore-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
@@ -74,6 +78,7 @@ pub fn main() {
         "datalog-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
@@ -83,6 +88,7 @@ pub fn main() {
         "wpinet-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
     println!("cargo:rerun-if-changed=HALInclude.h");

@@ -1,6 +1,6 @@
 # wpihal-rs
 
-Safe-enough™️ WPILib HAL bindings in Rust
+Safe-enough™ WPILib HAL bindings in Rust
 
 ## Installation
 
@@ -16,10 +16,15 @@ wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git", branch = "2027"
 I recommend pinning to a specific commit or branch.
 **The API may change at a moment's notice,** especially since this is tracking the SystemCore alpha/beta testing releases.
 
+To accelerate build times, you should also install the version of WPILib corresponding to this package's version; in this case **v2027.0.0-alpha-2**;
+as the build scripts first search your computer for the WPILib Maven artifacts before trying to download them externally.
+
 ## Compiling for coprocessors
 
+Both arm64 coprocessors and SystemCore are, well, 64-bit ARM.
 Set the `robot-controller` feature flag if you want to compile for SystemCore.
-Otherwise, this library will be linked against the arm64 coprocessor artifacts.
+
+Otherwise, this library will be linked against the arm64 coprocessor version of WPILib.
 
 ## Why just the HAL?
 
@@ -56,5 +61,6 @@ Actual achievements of these aims is not certain and there are almost certainly 
 * Macro-ized halsim wrapers
 * Stability guarentees
 * NTCore support
+* Versioning this in both the semver sense and the wpilib sense they are inconsistent with each other
 * Be more specific about usage of `&mut self` vs `&self` on wrapper types depending on if the underlying HAL impl is thread-safe (which implies `Send`/`Sync`)
 * `WPI_EventHandle` support (and `HAL_ProvideNewDataEventHandle` and friends)

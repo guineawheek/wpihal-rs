@@ -42,6 +42,7 @@ pub fn main() {
         "wpiutil-cpp",
         &VERSION,
         &buildlibs,
+        None,
     )
     .unwrap();
 

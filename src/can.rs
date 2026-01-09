@@ -7,7 +7,10 @@ use wpihal_sys::{
     HAL_WARN_CANSessionMux_TxQueueFull,
 };
 
-use crate::{error::HALResult, hal_call};
+use crate::{
+    error::{HALError, HALResult},
+    hal_call,
+};
 
 pub type CANStreamMessage = HAL_CANStreamMessage;
 /// Send the message but do not repeat it periodically.
@@ -62,16 +65,17 @@ impl StreamSession {
         })
     }
 
-    pub fn read_into(&self, messages: &mut [CANStreamMessage]) -> HALResult<usize> {
+    pub fn read_into(&self, messages: &mut [CANStreamMessage]) -> (usize, Option<HALError>) {
         let mut messages_read = 0_u32;
         let max_msg = messages.len().min(self.capacity as usize) as u32;
-        hal_call!(HAL_CAN_ReadStreamSession(
+        let err = hal_call!(HAL_CAN_ReadStreamSession(
             self.handle,
             messages.as_mut_ptr(),
             max_msg,
             &mut messages_read
-        ))?;
-        Ok(messages_read as usize)
+        ))
+        .err();
+        (messages_read as usize, err)
     }
 }
 

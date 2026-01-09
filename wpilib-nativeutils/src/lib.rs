@@ -35,6 +35,13 @@ impl ArtifactType {
             ArtifactType::StaticDebug => format!("{platform}staticdebug.zip"),
         }
     }
+    pub fn debug_release(&self) -> &'static str {
+        match self {
+            ArtifactType::Shared | ArtifactType::Static => "release",
+            ArtifactType::SharedDebug | ArtifactType::StaticDebug => "debug",
+            _ => "",
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -116,8 +123,8 @@ impl MavenRepo {
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Platform {
-    LinuxArm64,      // new coprocs
     LinuxSystemCore, // systemcore
+    LinuxArm64,      // new coprocs
     LinuxX86_64,     // Intel
     OsxUniversal,    // macs
     WindowsX86_64,   // WIntel
@@ -288,6 +295,7 @@ pub fn download_native_library_artifacts(
     artifact_id: &str,
     version: &str,
     buildlibs: &Path,
+    artifact_types: Option<&[ArtifactType]>,
 ) -> anyhow::Result<()> {
     let cache_marker = buildlibs.join(format!(
         ".nativeutils_downloaded_{group_id}.{artifact_id}-{version}"
@@ -299,6 +307,7 @@ pub fn download_native_library_artifacts(
     let headers_dir = buildlibs.join("headers");
     std::fs::create_dir_all(&headers_dir)?;
 
+    // we no longer have ni-libraries so all artifacts have headers now. Yay!
     download_artifact_zip_to_dir(
         platform,
         &headers_dir,
@@ -309,16 +318,17 @@ pub fn download_native_library_artifacts(
             artifact_id,
             version,
         },
-    )
-    .unwrap();
+    )?;
 
-    for (artifact_type, build_type) in [
-        (ArtifactType::Shared, "release"),
-        (ArtifactType::SharedDebug, "debug"),
-        (ArtifactType::Static, "release"),
-        (ArtifactType::StaticDebug, "debug"),
-    ] {
-        let output_dir = buildlibs.join(build_type);
+    let artifact_types = artifact_types.unwrap_or(&[
+        ArtifactType::Shared,
+        ArtifactType::SharedDebug,
+        ArtifactType::Static,
+        ArtifactType::StaticDebug,
+    ]);
+
+    for artifact_type in artifact_types.iter().cloned() {
+        let output_dir = buildlibs.join(artifact_type.debug_release());
         std::fs::create_dir_all(&output_dir)?;
         download_artifact_zip_to_dir(
             platform,
@@ -335,8 +345,7 @@ pub fn download_native_library_artifacts(
     std::fs::OpenOptions::new()
         .create(true)
         .write(true)
-        .open(cache_marker)
-        .ok();
+        .open(cache_marker)?;
     Ok(())
 }
 
@@ -440,7 +449,7 @@ impl Sysroot {
 
     pub fn cpp_bits_include(&self) -> Option<PathBuf> {
         let path = self.cpp_include()?.join(&self.target);
-        if path.exists() { Some(path) } else { None }
+        path.exists().then_some(path)
     }
 }
 
@@ -482,8 +491,7 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
                 prospective
                     .try_exists()
                     .ok()
-                    .map(|e| if e { Some(prospective) } else { None })
-                    .expect(EXPECT)
+                    .and_then(|e| e.then_some(prospective))
                     .expect(EXPECT)
             };
 
@@ -504,8 +512,7 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
                 prospective
                     .try_exists()
                     .ok()
-                    .map(|e| if e { Some(prospective) } else { None })
-                    .expect(EXPECT)
+                    .and_then(|e| e.then_some(prospective))
                     .expect(EXPECT)
             };
             Some(Sysroot::new(&path, ARM64_TARGET))
