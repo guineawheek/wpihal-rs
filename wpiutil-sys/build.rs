@@ -8,39 +8,23 @@ use std::{
 
 use bindgen::{RustTarget, callbacks::ParseCallbacks};
 use wpilib_nativeutils::{
-    Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain, stringify_path,
+    Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain, is_debug, stringify_path,
 };
-
-static VERSION: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
-static YEAR: LazyLock<String> = LazyLock::new(|| "2027_alpha1".to_string());
-static PLATFORM: LazyLock<Platform> = LazyLock::new(|| {
-    Platform::from_rust_target(
-        &std::env::var("TARGET").unwrap(),
-        std::env::var("CARGO_FEATURE_ROBOT_CONTROLLER").is_ok(),
-    )
-    .expect("Invalid build target")
-});
-static DEBUG: LazyLock<bool> = LazyLock::new(|| std::env::var("PROFILE").unwrap() == "debug");
-static OUT_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
-    PathBuf::from(std::env::var("OUT_DIR").unwrap())
-        .canonicalize()
-        .unwrap()
-});
 
 pub fn main() {
     let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release2027);
-    let wpilib_maven = wpilib_nativeutils::get_wpilib_maven(&YEAR.as_str());
+    let wpilib_maven = wpilib_nativeutils::get_wpilib_maven();
     let remote_maven = wpilib_nativeutils::get_remote_maven(ReleaseTrain::Release2027);
     let repos = [local_maven, wpilib_maven, remote_maven];
-    let buildlibs = OUT_DIR.join("buildlibs");
+    let buildlibs = wpilib_nativeutils::out_dir().join("buildlibs");
     let headers = buildlibs.join("headers");
 
     wpilib_nativeutils::download_native_library_artifacts(
         &repos,
-        *PLATFORM,
-        "edu.wpi.first.wpiutil",
+        wpilib_nativeutils::platform(),
+        "org.wpilib.wpiutil",
         "wpiutil-cpp",
-        &VERSION,
+        wpilib_nativeutils::version(),
         &buildlibs,
         None,
     )
@@ -49,11 +33,11 @@ pub fn main() {
     println!("cargo:rerun-if-changed=UtilsInclude.h");
     wpilib_nativeutils::rustc_link_search(
         &buildlibs,
-        *PLATFORM,
+        wpilib_nativeutils::platform(),
         std::env::var("CARGO_FEATURE_SHARED").is_ok(),
-        *DEBUG,
+        wpilib_nativeutils::is_debug(),
     );
-    wpilib_nativeutils::rustc_debug_switch(&["wpiutil"], *DEBUG);
+    wpilib_nativeutils::rustc_debug_switch(&["wpiutil"], wpilib_nativeutils::is_debug());
     generate_bindings_for_header(bindgen::Builder::default(), "bindings.rs");
 }
 
@@ -68,7 +52,8 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
         "-v".to_string(),
         "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH".to_string(),
     ];
-    wpilib_nativeutils::add_sysroot_to_clang_args(&mut clang_args, *PLATFORM, &YEAR).unwrap();
+    wpilib_nativeutils::add_sysroot_to_clang_args(&mut clang_args, wpilib_nativeutils::platform())
+        .unwrap();
 
     let bindings = builder
         .rust_target(RustTarget::stable(85, 0).unwrap())
@@ -76,7 +61,9 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
         .derive_default(true)
         .clang_arg(format!(
             "-I{}",
-            wpilib_nativeutils::stringify_path(&OUT_DIR.join("buildlibs/headers"))
+            wpilib_nativeutils::stringify_path(
+                &wpilib_nativeutils::out_dir().join("buildlibs/headers")
+            )
         ))
         .clang_args(&clang_args)
         .allowlist_item(r"WPI_\w+")
@@ -92,7 +79,7 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
         .expect("Unable to generate bindings");
 
     bindings
-        .write_to_file(OUT_DIR.join(output))
+        .write_to_file(wpilib_nativeutils::out_dir().join(output))
         .expect("Couldn't write bindings!");
 }
 

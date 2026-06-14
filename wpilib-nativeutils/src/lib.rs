@@ -2,6 +2,7 @@ use std::{
     fmt::Display,
     io::Cursor,
     path::{Path, PathBuf},
+    sync::LazyLock,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -231,8 +232,8 @@ pub fn get_wpilib_root(year: &str) -> PathBuf {
     }
 }
 
-pub fn get_wpilib_maven(year: &str) -> MavenRepo {
-    let wpilib_maven_root = get_wpilib_root(year).join("maven");
+pub fn get_wpilib_maven() -> MavenRepo {
+    let wpilib_maven_root = get_wpilib_root(year()).join("maven");
     #[cfg(target_os = "windows")]
     let wpilib_root_string = wpilib_maven_root.to_string_lossy().replace("\\", "/");
     #[cfg(not(target_os = "windows"))]
@@ -404,9 +405,8 @@ pub fn stringify_path(path: &Path) -> String {
 pub fn add_sysroot_to_clang_args(
     clang_args: &mut Vec<String>,
     platform: Platform,
-    year: &str,
 ) -> anyhow::Result<()> {
-    if let Some(sysroot) = locate_sysroot(platform, year) {
+    if let Some(sysroot) = locate_sysroot(platform) {
         eprintln!("Located sysroot at {:?}", sysroot.path());
         eprintln!("Located sysroot c++ at {:?}", sysroot.cpp_include());
         clang_args.push(format!("--sysroot={}", stringify_path(sysroot.path())));
@@ -454,7 +454,7 @@ impl Sysroot {
 }
 
 /// Locates ths sysroot and relevant directories to be included in order for C++ bindgen to work
-pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
+pub fn locate_sysroot(platform: Platform) -> Option<Sysroot> {
     // Locates the sysroot.
     /*
     Sysroots are located at:
@@ -472,7 +472,7 @@ pub fn locate_sysroot(platform: Platform, year: &str) -> Option<Sysroot> {
             const SYSTEMCORE_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
             const SYSTEMCORE_TARGET: &str = "aarch64-linux-gnu";
             const EXPECT: &str = "Cannot find SystemCore sysroot!";
-            let user_sysroot = get_wpilib_root(year)
+            let user_sysroot = get_wpilib_root(year())
                 .join("systemcore")
                 .join(SYSTEMCORE_TARGET)
                 .join("sysroot");
@@ -548,4 +548,45 @@ fn latest_gcc_version(p: &Path) -> Option<PathBuf> {
             .ok()?
             .path(),
     )
+}
+
+/// Gets the WPILib version (which is typically set to package version)
+pub fn version() -> &'static str {
+    static VERSION: LazyLock<String> =
+        LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
+    VERSION.as_str()
+}
+
+/// Gets the year string.
+/// This **will** change in the future.
+pub fn year() -> &'static str {
+    "2027_alpha6"
+}
+
+/// Gets the current compilation target based on `build.rs` variables
+pub fn platform() -> Platform {
+    static PLATFORM: LazyLock<Platform> = LazyLock::new(|| {
+        Platform::from_rust_target(
+            &std::env::var("TARGET").unwrap(),
+            std::env::var("CARGO_FEATURE_ROBOT_CONTROLLER").is_ok(),
+        )
+        .expect("Invalid build target")
+    });
+    *PLATFORM
+}
+
+/// Gets whether this should be built in a debug profile.
+pub fn is_debug() -> bool {
+    static DEBUG: LazyLock<bool> = LazyLock::new(|| std::env::var("PROFILE").unwrap() == "debug");
+    *DEBUG
+}
+
+/// Gets the generated OUT_DIR
+pub fn out_dir() -> &'static Path {
+    static OUT_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
+        PathBuf::from(std::env::var("OUT_DIR").unwrap())
+            .canonicalize()
+            .unwrap()
+    });
+    &OUT_DIR
 }

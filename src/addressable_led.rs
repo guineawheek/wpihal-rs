@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use wpihal_sys::{
     HAL_AddressableLEDColorOrder, HAL_AddressableLEDData, HAL_AddressableLEDHandle,
     HAL_FreeAddressableLED, HAL_InitializeAddressableLED, HAL_SetAddressableLEDData,
-    HAL_SetAddressableLEDLength,
+    HAL_SetAddressableLEDLength, HAL_SetAddressableLEDStart,
 };
 
 use crate::{
@@ -11,9 +11,13 @@ use crate::{
     hal_call,
 };
 
-pub const ADDRESSABLE_LED_MAX_LENGTH: u32 = wpihal_sys::HAL_kAddressableLEDMaxLength;
+/// The maximum number of addressible LEDs that can be controlled.
+pub const ADDRESSABLE_LED_MAX_LENGTH: u32 = wpihal_sys::HAL_ADDRESSABLE_LED_MAX_LEN;
 
+/// Structure for holding RGB LED data.
 pub type AddressableLEDData = HAL_AddressableLEDData;
+/// The ordering that color data is transmitted onto the WS2812.
+pub type AddressibleLEDColorOrder = HAL_AddressableLEDColorOrder;
 
 /// Addressable LEDs.
 ///
@@ -35,10 +39,7 @@ impl AddressableLED {
     ///
     /// THe max length is 1024 LEDs.
     pub fn set_start(&mut self, start: usize) -> HALResult<()> {
-        Ok(hal_call!(HAL_SetAddressableLEDLength(
-            self.0,
-            start as i32
-        ))?)
+        Ok(hal_call!(HAL_SetAddressableLEDStart(self.0, start as i32))?)
     }
 
     /// Sets the length of the LED strip.
@@ -53,6 +54,8 @@ impl AddressableLED {
 }
 
 /// Updates the led output data buffer.
+///
+/// All addressible LEDs pull from the buffer set here.
 pub fn set_data(
     start: usize,
     order: HAL_AddressableLEDColorOrder,

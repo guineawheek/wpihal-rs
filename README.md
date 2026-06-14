@@ -16,7 +16,7 @@ wpihal = { git = "https://github.com/guineawheek/wpihal-rs.git", branch = "2027"
 I recommend pinning to a specific commit or branch.
 **The API may change at a moment's notice,** especially since this is tracking the SystemCore alpha/beta testing releases.
 
-To accelerate build times, you should also install the version of WPILib corresponding to this package's version; in this case **v2027.0.0-alpha-2**;
+To accelerate build times, you should also install the version of WPILib corresponding to this package's version; in this case **v2027.0.0-alpha-6**;
 as the build scripts first search your computer for the WPILib Maven artifacts before trying to download them externally.
 
 ## Compiling for coprocessors
@@ -60,7 +60,7 @@ Actual achievements of these aims is not certain and there are almost certainly 
 * Better guards against WPILib's overuse of `i32`s for things that are NOT i32 sized
 * Macro-ized halsim wrapers
 * Stability guarentees
-* NTCore support
+* ~~NTCore support~~ idk i don't trust the upstream NT impl anymore
 * Versioning this in both the semver sense and the wpilib sense they are inconsistent with each other
 * Be more specific about usage of `&mut self` vs `&self` on wrapper types depending on if the underlying HAL impl is thread-safe (which implies `Send`/`Sync`)
 * `WPI_EventHandle` support (and `HAL_ProvideNewDataEventHandle` and friends)

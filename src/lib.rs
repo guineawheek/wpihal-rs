@@ -18,6 +18,8 @@ use wpiutil::wpistring::WPIString;
 
 /// addressable ws2812 leds
 pub mod addressable_led;
+/// alerts
+pub mod alert;
 /// analog input
 pub mod analog_input;
 /// can bus

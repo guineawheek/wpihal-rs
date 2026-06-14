@@ -10,110 +10,93 @@ use std::{
 use bindgen::{RustTarget, callbacks::ParseCallbacks};
 use wpilib_nativeutils::{Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain};
 
-const NI_VERSION: &'static str = "2026.1.0";
-static VERSION: LazyLock<String> = LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
-static YEAR: LazyLock<String> = LazyLock::new(|| "2027_alpha1".to_string());
-static PLATFORM: LazyLock<Platform> = LazyLock::new(|| {
-    Platform::from_rust_target(
-        &std::env::var("TARGET").unwrap(),
-        std::env::var("CARGO_FEATURE_ROBOT_CONTROLLER").is_ok(),
-    )
-    .expect("Invalid build target")
-});
-static DEBUG: LazyLock<bool> = LazyLock::new(|| std::env::var("PROFILE").unwrap() == "debug");
-static OUT_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
-    PathBuf::from(std::env::var("OUT_DIR").unwrap())
-        .canonicalize()
-        .unwrap()
-});
-
 pub fn main() {
     let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release2027);
-    let wpilib_maven = wpilib_nativeutils::get_wpilib_maven(&YEAR.as_str());
+    let wpilib_maven = wpilib_nativeutils::get_wpilib_maven();
     let remote_maven = wpilib_nativeutils::get_remote_maven(ReleaseTrain::Release2027);
     let repos = [local_maven, wpilib_maven, remote_maven];
-    let buildlibs = OUT_DIR.join("buildlibs");
+    let buildlibs = wpilib_nativeutils::out_dir().join("buildlibs");
     let headers = buildlibs.join("headers");
 
     let cache_marker = buildlibs.join(format!(
-        ".nativeutils_downloaded_edu.wpi.first.hal.hal-cpp-{}",
-        VERSION.as_str()
+        ".nativeutils_downloaded_org.wpilib.hal.hal-cpp-{}",
+        wpilib_nativeutils::version()
     ));
     let generate_usage_reporting = !cache_marker.exists();
 
     wpilib_nativeutils::download_native_library_artifacts(
         &repos,
-        *PLATFORM,
-        "edu.wpi.first.hal",
+        wpilib_nativeutils::platform(),
+        "org.wpilib.hal",
         "hal-cpp",
-        &VERSION,
+        wpilib_nativeutils::version(),
         &buildlibs,
         None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
         &repos,
-        *PLATFORM,
-        "edu.wpi.first.wpiutil",
+        wpilib_nativeutils::platform(),
+        "org.wpilib.wpiutil",
         "wpiutil-cpp",
-        &VERSION,
+        wpilib_nativeutils::version(),
         &buildlibs,
         None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
         &repos,
-        *PLATFORM,
-        "edu.wpi.first.ntcore",
+        wpilib_nativeutils::platform(),
+        "org.wpilib.ntcore",
         "ntcore-cpp",
-        &VERSION,
+        wpilib_nativeutils::version(),
         &buildlibs,
         None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
         &repos,
-        *PLATFORM,
-        "edu.wpi.first.datalog",
+        wpilib_nativeutils::platform(),
+        "org.wpilib.datalog",
         "datalog-cpp",
-        &VERSION,
+        wpilib_nativeutils::version(),
         &buildlibs,
         None,
     )
     .unwrap();
     wpilib_nativeutils::download_native_library_artifacts(
         &repos,
-        *PLATFORM,
-        "edu.wpi.first.wpinet",
+        wpilib_nativeutils::platform(),
+        "org.wpilib.wpinet",
         "wpinet-cpp",
-        &VERSION,
+        wpilib_nativeutils::version(),
         &buildlibs,
         None,
     )
     .unwrap();
-    println!("cargo:rerun-if-changed=HALInclude.h");
+    println!("cargo:rerun-if-changed=shim");
     wpilib_nativeutils::rustc_link_search(
         &buildlibs,
-        *PLATFORM,
+        wpilib_nativeutils::platform(),
         std::env::var("CARGO_FEATURE_SHARED").is_ok(),
-        *DEBUG,
+        wpilib_nativeutils::is_debug(),
     );
     wpilib_nativeutils::rustc_debug_switch(
         &["wpiHal", "wpiutil", "ntcore", "datalog", "wpinet"],
-        *DEBUG,
+        wpilib_nativeutils::is_debug(),
     );
     generate_bindings_for_header(
         bindgen::Builder::default(),
-        "HALInclude.h",
-        r"(HAL_|WPI_|HALSIM_)\w+",
+        "shim/HALInclude.h",
+        r"(HAL_|WPI_|HALSIM_|_HALShim_)\w+",
         "hal_bindings.rs",
     );
-    generate_bindings_for_header(
-        bindgen::Builder::default(),
-        headers.join("hal/Errors.h").as_os_str().to_str().unwrap(),
-        ".*",
-        "error_bindings.rs",
-    );
+    cc::Build::new()
+        .cpp(true)
+        .file("shim/HALShim.cpp")
+        .std("c++20")
+        .include(headers)
+        .compile("HALShim");
 }
 
 fn generate_bindings_for_header(
@@ -130,7 +113,8 @@ fn generate_bindings_for_header(
         "-std=c++20".to_string(),
         "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH".to_string(),
     ];
-    wpilib_nativeutils::add_sysroot_to_clang_args(&mut clang_args, *PLATFORM, &YEAR).unwrap();
+    wpilib_nativeutils::add_sysroot_to_clang_args(&mut clang_args, wpilib_nativeutils::platform())
+        .unwrap();
 
     let bindings = builder
         .rust_target(RustTarget::stable(85, 0).unwrap())
@@ -138,7 +122,9 @@ fn generate_bindings_for_header(
         .derive_default(true)
         .clang_arg(format!(
             "-I{}",
-            wpilib_nativeutils::stringify_path(&OUT_DIR.join("buildlibs/headers"))
+            wpilib_nativeutils::stringify_path(
+                &wpilib_nativeutils::out_dir().join("buildlibs/headers")
+            )
         ))
         .clang_args(&clang_args)
         .allowlist_type(regex)
@@ -154,7 +140,7 @@ fn generate_bindings_for_header(
         .expect("Unable to generate bindings");
 
     bindings
-        .write_to_file(OUT_DIR.join(output))
+        .write_to_file(&wpilib_nativeutils::out_dir().join(output))
         .expect("Couldn't write bindings!");
 }
 
@@ -175,18 +161,26 @@ impl ParseCallbacks for WPIHalCallbacks {
             Some(ov_name.to_string())
         } else {
             // rewrite enums to not have prefixes
+            // search `HAL_ENUM` in codebase for instances
             let prefix = match enum_name {
-                "HAL_AnalogTriggerType" => "HAL_Trigger_",
-                "HAL_CANManufacturer" => "HAL_CAN_Man_",
-                "HAL_CANDeviceType" => "HAL_CAN_Dev_",
-                "HAL_Counter_Mode" => "HAL_Counter_",
-                "HAL_MatchType" => "HAL_",
-                "HAL_EncoderIndexingType" => "HAL_",
-                "HAL_EncoderEncodingType" => "HAL_Encoder_",
+                "HAL_AddressableLEDColorOrder" => "HAL_ALED_",
+                "HAL_AlertLevel" => "HAL_ALERT_",
+                "HAL_CANDeviceType" => "HAL_CAN_DEV_",
+                "HAL_CANManufacturer" => "HAL_CAN_MAN_",
+                "HAL_CANFlags" => "HAL_CAN_",
+                "HAL_CANBusMap" => "HAL_CAN_BUS_",
+                "HAL_AllianceStationID" => "HAL_ALLIANCE_STATION_",
+                "HAL_MatchType" => "HAL_MATCH_TYPE_",
+                "HAL_RobotMode" => "HAL_ROBOT_MODE_",
+                "HAL_JoystickPOV" => "HAL_JOYSTICK_POV_",
+                "HAL_EncoderIndexingType" => "HAL_ENCODER_INDEX_",
+                "HAL_EncoderEncodingType" => "HAL_",
+                "HAL_RuntimeType" => "HAL_RUNTIME_",
                 "HAL_I2CPort" => "HAL_I2C_",
-                "HAL_RadioLEDState" => "HAL_RadioLED_",
-                "HAL_SPIPort" => "HAL_SPI_",
-                "HAL_SPIMode" => "HAL_SPI_",
+                "HAL_PowerDistributionType" => "HAL_POWER_DISTRIBUTION_",
+                "HAL_REVPHCompressorConfigType" => "HAL_REVPH_COMPRESSOR_CONFIG_",
+                "HAL_SerialPort" => "HAL_SERIAL_PORT_",
+                "HAL_SimValueDirection" => "HAL_SIM_VALUE_",
                 _ => {
                     return None;
                 }

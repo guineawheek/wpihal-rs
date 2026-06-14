@@ -6,9 +6,8 @@ members = [
     "wpiutil",
     "wpiutil-sys",
     "build-test",
-    "ntcore-sys"
 ]
-package.version = "0.2027.0-0-alpha-2"
+package.version = "0.2027.0-0-alpha-6"
 package.license = "MIT OR Apache-2.0"
 package.authors = ["guineawheek <guineawheek@gmail.com>"]
 package.repository = "https://github.com/guineawheek/wpihal-rs"
@@ -35,3 +34,14 @@ robot-controller = ["wpihal-sys/robot-controller", "wpiutil/robot-controller"]
 embedded-hal = "1.0.0"
 wpihal-sys = { path = "./wpihal-sys" }
 wpiutil = { path = "./wpiutil"}
+
+[workspace.dependencies]
+anyhow = "1"
+bindgen = "0.72"
+cc = "1.2"
+
+home = "0.5.9"
+regex = "1.12"
+reqwest = { version = "0.13.4", default-features = false, features = ["blocking", "rustls"] }
+which = "8.0.0"
+zip = "8.6.0"

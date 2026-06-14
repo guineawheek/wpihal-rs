@@ -1,5 +1,5 @@
 use core::str;
-use std::{ffi::CStr, fmt::Display, mem::ManuallyDrop, ops::Deref};
+use std::{ffi::CStr, fmt::Display, marker::PhantomData, mem::ManuallyDrop, ops::Deref};
 
 pub use wpiutil_sys::WPI_String;
 use wpiutil_sys::{WPI_AllocateString, WPI_FreeString};
@@ -73,13 +73,30 @@ impl WPIString {
         }
     }
 
-    pub unsafe fn as_raw(&self) -> &wpiutil_sys::WPI_String {
+    pub fn as_raw(&self) -> &wpiutil_sys::WPI_String {
         &self.0
     }
 }
 
 /// This is just ManuallyDrop<WPIString> and is passed in cases where the constructor should *not* drop the struct
-pub type WPIStringRef<'a> = core::mem::ManuallyDrop<WPIString>;
+pub struct WPIStringRef<'a> {
+    inner: core::mem::ManuallyDrop<WPIString>,
+    _borrow: PhantomData<&'a str>,
+}
+
+impl WPIStringRef<'_> {
+    /// Reference to backing [`WPIString`]
+    pub fn wpi_str(&self) -> &WPIString {
+        &self.inner
+    }
+}
+
+impl Deref for WPIStringRef<'_> {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.inner.as_str()
+    }
+}
 
 impl Deref for WPIString {
     type Target = str;

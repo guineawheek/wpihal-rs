@@ -5,11 +5,10 @@ use wpilib_nativeutils::{Artifact, ArtifactType, Platform, ReleaseTrain};
 
 fn main() {
     let version = env!("CARGO_PKG_VERSION");
-    let year = env!("CARGO_PKG_VERSION_MAJOR");
     //let target = "aarch64-apple-darwin";
     let platform = Platform::OsxUniversal;
     let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release);
-    let wpilib_maven = wpilib_nativeutils::get_wpilib_maven(year);
+    let wpilib_maven = wpilib_nativeutils::get_wpilib_maven();
     let remote_maven = wpilib_nativeutils::get_remote_maven(ReleaseTrain::Release);
     let repos = [local_maven, wpilib_maven, remote_maven];
 
@@ -24,7 +23,7 @@ fn main() {
         &repos,
         &Artifact {
             artifact_type: ArtifactType::Headers,
-            group_id: "edu.wpi.first.hal",
+            group_id: "org.wpilib.hal",
             artifact_id: "hal-cpp",
             version,
         },
@@ -37,7 +36,7 @@ fn main() {
         &repos,
         &Artifact {
             artifact_type: ArtifactType::Shared,
-            group_id: "edu.wpi.first.hal",
+            group_id: "org.wpilib.hal",
             artifact_id: "hal-cpp",
             version,
         },
