@@ -41,7 +41,7 @@ pub fn set_thread_priority<T>(handle: &JoinHandle<T>, priority: i32) -> HALResul
 /// No-op on windows.
 #[cfg(not(unix))]
 pub fn set_thread_priority<T>(_handle: &JoinHandle<T>) -> HALResult<()> {
-    Ok()
+    Ok(())
 }
 
 pub fn set_current_thread_priority(priority: i32) -> HALResult<()> {

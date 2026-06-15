@@ -96,7 +96,7 @@ pub fn main() {
         .cpp(true)
         .file("shim/HALShim.cpp")
         .std("c++20")
-        .include(headers)
+        .include(wpilib_nativeutils::fix_paths(&headers))
         .compile("HALShim");
 }
 

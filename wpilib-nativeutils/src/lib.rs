@@ -592,3 +592,13 @@ pub fn out_dir() -> &'static Path {
     });
     &OUT_DIR
 }
+
+// MSVC, the blight up on the software ecosystem it is, chokes on device paths in includes.
+pub fn fix_paths(path: &Path) -> PathBuf {
+    if cfg!(windows) {
+        let s = path.to_str().unwrap();
+        s.strip_prefix("\\\\?\\").unwrap_or(s).into()
+    } else {
+        path.into()
+    }
+}
