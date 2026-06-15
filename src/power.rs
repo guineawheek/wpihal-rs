@@ -4,7 +4,7 @@ use wpihal_sys::{
     HAL_ResetUserCurrentFaults, HAL_SetBrownoutVoltage, HAL_SetUserRailEnabled3V3,
 };
 
-use crate::{error::HALResult, hal_call};
+use crate::{error::HALResult, hal_bool, hal_call};
 
 pub fn get_vin_voltage() -> HALResult<f64> {
     hal_call!(HAL_GetVinVoltage())
@@ -19,7 +19,7 @@ pub fn get_user_current_3v3() -> HALResult<f64> {
 }
 
 pub fn get_user_active_3v3() -> HALResult<bool> {
-    Ok(hal_call!(HAL_GetUserActive3V3())? != 0)
+    hal_call!(HAL_GetUserActive3V3()).map(hal_bool)
 }
 
 pub fn get_user_current_faults_3v3() -> HALResult<u8> {

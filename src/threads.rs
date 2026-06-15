@@ -16,7 +16,7 @@ use crate::hal_retcall;
 /// No-op on windows.
 #[cfg(unix)]
 pub fn get_thread_priority<T>(handle: &JoinHandle<T>) -> HALResult<i32> {
-    hal_retcall!(HAL_GetThreadPriority(handle.as_pthread_t() as _; -> i32;))
+    hal_retcall!(HAL_GetThreadPriority(handle.as_pthread_t() as _) -> i32)
 }
 /// Gets thread priority.
 /// No-op on windows.
@@ -27,7 +27,7 @@ pub fn get_thread_priority<T>(_handle: &JoinHandle<T>) -> HALResult<i32> {
 
 /// Gets current thread priority.
 pub fn get_current_thread_priority() -> HALResult<i32> {
-    hal_retcall!(HAL_GetCurrentThreadPriority(;-> i32;))
+    hal_retcall!(HAL_GetCurrentThreadPriority() -> i32)
 }
 
 /// Sets thread priority.

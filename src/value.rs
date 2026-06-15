@@ -52,12 +52,12 @@ impl From<HAL_Value> for HALValue {
     fn from(value: HAL_Value) -> Self {
         unsafe {
             match value.type_ {
-                HAL_Type::HAL_UNASSIGNED => HALValue::Unassigned,
-                HAL_Type::HAL_BOOLEAN => HALValue::Boolean(value.data.v_boolean != 0),
-                HAL_Type::HAL_DOUBLE => HALValue::Double(value.data.v_double),
-                HAL_Type::HAL_ENUM => HALValue::Enum(value.data.v_enum),
-                HAL_Type::HAL_INT => HALValue::Int(value.data.v_int),
-                HAL_Type::HAL_LONG => HALValue::Long(value.data.v_long),
+                HAL_Type::HalUnassigned => HALValue::Unassigned,
+                HAL_Type::HalBoolean => HALValue::Boolean(value.data.v_boolean != 0),
+                HAL_Type::HalDouble => HALValue::Double(value.data.v_double),
+                HAL_Type::HalEnum => HALValue::Enum(value.data.v_enum),
+                HAL_Type::HalInt => HALValue::Int(value.data.v_int),
+                HAL_Type::HalLong => HALValue::Long(value.data.v_long),
             }
         }
     }
@@ -68,29 +68,29 @@ impl From<HALValue> for HAL_Value {
         match value {
             HALValue::Unassigned => HAL_Value {
                 data: HAL_Value__bindgen_ty_1 { v_boolean: 0 },
-                type_: HAL_Type::HAL_UNASSIGNED,
+                type_: HAL_Type::HalUnassigned,
             },
             HALValue::Boolean(v) => HAL_Value {
                 data: HAL_Value__bindgen_ty_1 {
                     v_boolean: v as i32,
                 },
-                type_: HAL_Type::HAL_BOOLEAN,
+                type_: HAL_Type::HalBoolean,
             },
             HALValue::Double(v) => HAL_Value {
                 data: HAL_Value__bindgen_ty_1 { v_double: v },
-                type_: HAL_Type::HAL_DOUBLE,
+                type_: HAL_Type::HalDouble,
             },
             HALValue::Enum(v) => HAL_Value {
                 data: HAL_Value__bindgen_ty_1 { v_enum: v },
-                type_: HAL_Type::HAL_ENUM,
+                type_: HAL_Type::HalEnum,
             },
             HALValue::Int(v) => HAL_Value {
                 data: HAL_Value__bindgen_ty_1 { v_int: v },
-                type_: HAL_Type::HAL_INT,
+                type_: HAL_Type::HalInt,
             },
             HALValue::Long(v) => HAL_Value {
                 data: HAL_Value__bindgen_ty_1 { v_long: v },
-                type_: HAL_Type::HAL_LONG,
+                type_: HAL_Type::HalLong,
             },
         }
     }

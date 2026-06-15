@@ -15,7 +15,7 @@ use wpihal_sys::{
 
 use crate::{
     error::{HALResult, allocation_location_ptr},
-    hal_call,
+    hal_bool, hal_call,
 };
 
 pub struct CTREPCM(HAL_CTREPCMHandle);
@@ -34,7 +34,7 @@ impl CTREPCM {
     }
 
     pub fn get_compressor(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMCompressor(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMCompressor(self.0)).map(hal_bool)
     }
 
     pub fn set_closed_loop_control(&mut self, enabled: bool) -> HALResult<()> {
@@ -42,11 +42,11 @@ impl CTREPCM {
     }
 
     pub fn get_closed_loop_control(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMClosedLoopControl(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMClosedLoopControl(self.0)).map(hal_bool)
     }
 
     pub fn get_pressure_switch(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMPressureSwitch(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMPressureSwitch(self.0)).map(hal_bool)
     }
 
     pub fn get_compressor_current(&self) -> HALResult<f64> {
@@ -54,27 +54,27 @@ impl CTREPCM {
     }
 
     pub fn get_compressor_current_too_high_fault(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMCompressorCurrentTooHighFault(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMCompressorCurrentTooHighFault(self.0)).map(hal_bool)
     }
 
     pub fn get_compressor_current_too_high_sticky_fault(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMCompressorCurrentTooHighStickyFault(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMCompressorCurrentTooHighStickyFault(self.0)).map(hal_bool)
     }
 
     pub fn get_compressor_shorted_fault(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMCompressorShortedFault(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMCompressorShortedFault(self.0)).map(hal_bool)
     }
 
     pub fn get_compressor_shorted_sticky_fault(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMCompressorShortedStickyFault(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMCompressorShortedStickyFault(self.0)).map(hal_bool)
     }
 
     pub fn get_compressor_not_connected_fault(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMCompressorNotConnectedFault(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMCompressorNotConnectedFault(self.0)).map(hal_bool)
     }
 
     pub fn get_compressor_not_connected_sticky_fault(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMCompressorNotConnectedStickyFault(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMCompressorNotConnectedStickyFault(self.0)).map(hal_bool)
     }
 
     pub fn get_solenoids(&self) -> HALResult<u32> {
@@ -90,11 +90,11 @@ impl CTREPCM {
     }
 
     pub fn get_solenoid_voltage_fault(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMSolenoidVoltageFault(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMSolenoidVoltageFault(self.0)).map(hal_bool)
     }
 
     pub fn get_solenoid_voltage_sticky_fault(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCTREPCMSolenoidVoltageStickyFault(self.0))? != 0)
+        hal_call!(HAL_GetCTREPCMSolenoidVoltageStickyFault(self.0)).map(hal_bool)
     }
 
     pub fn clear_all_sticky_faults(&mut self) -> HALResult<()> {

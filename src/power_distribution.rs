@@ -20,7 +20,7 @@ use wpihal_sys::{
 
 use crate::{
     error::{HALResult, allocation_location_ptr},
-    hal_call,
+    hal_bool, hal_call,
 };
 
 pub type PowerDistributionType = HAL_PowerDistributionType;
@@ -115,7 +115,7 @@ impl PowerDistribution {
     }
 
     pub fn get_switchable_channel(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetPowerDistributionSwitchableChannel(self.0))? != 0)
+        hal_call!(HAL_GetPowerDistributionSwitchableChannel(self.0)).map(hal_bool)
     }
 
     pub fn get_version(&self) -> HALResult<PowerDistributionVersion> {

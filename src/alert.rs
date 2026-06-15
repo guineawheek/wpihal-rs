@@ -3,7 +3,7 @@ use wpihal_sys::{
     HAL_IsAlertActive, HAL_SetAlertActive, HAL_SetAlertText,
 };
 
-use wpiutil::wpistring::{WPI_String, WPIString, WPIStringRef};
+use wpiutil::wpistring::{RawWPIString, WPIString, WPIStringRef};
 
 use crate::{error::HALResult, hal_call};
 
@@ -34,7 +34,7 @@ impl Alert {
     }
 
     pub fn get_text(&self) -> HALResult<WPIString> {
-        let mut out = WPI_String::default();
+        let mut out = RawWPIString::default();
         // SAFETY: wpihal allocates the string so we are responsible for its deallocation
         hal_call!(HAL_GetAlertText(self.0, &mut out)).map(|()| unsafe { WPIString::from_raw(out) })
     }

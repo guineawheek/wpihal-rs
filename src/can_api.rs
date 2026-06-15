@@ -29,10 +29,10 @@ impl CANMessage {
         data_buf.copy_from_slice(&data[..length]);
         let mut flags = 0;
         if brs {
-            flags |= HAL_CANFlags::FD_BITRATESWITCH as i32;
+            flags |= HAL_CANFlags::FdBitrateswitch as i32;
         }
         if fd {
-            flags |= HAL_CANFlags::FD_DATALENGTH as i32;
+            flags |= HAL_CANFlags::FdDatalength as i32;
         }
 
         Self {
@@ -61,11 +61,11 @@ impl CANMessage {
     }
 
     pub fn brs(&self) -> bool {
-        self.flags | HAL_CANFlags::FD_BITRATESWITCH as i32 != 0
+        self.flags | HAL_CANFlags::FdBitrateswitch as i32 != 0
     }
 
     pub fn fd(&self) -> bool {
-        self.flags | HAL_CANFlags::FD_DATALENGTH as i32 != 0
+        self.flags | HAL_CANFlags::FdDatalength as i32 != 0
     }
 
     pub const fn as_hal_canmessage(&self) -> HAL_CANMessage {

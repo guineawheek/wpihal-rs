@@ -8,16 +8,32 @@ use std::{
 
 use wpihal_sys::{HAL_GetErrorMessage, HAL_SendConsoleLine, HAL_SendError, HAL_SetPrintErrorImpl};
 
+use crate::hal_retcall;
+
 /// Sends a warning to the driver station.
 pub fn send_warning(code: i32, details: &CStr) -> HALResult<()> {
-    let v = unsafe { HAL_SendError(0, code, 0, details.as_ptr(), c"".as_ptr(), c"".as_ptr(), 1) };
-    if v != 0 { Err(HALError(v)) } else { Ok(()) }
+    hal_retcall!(HAL_SendError(
+        0,
+        code,
+        0,
+        details.as_ptr(),
+        c"".as_ptr(),
+        c"".as_ptr(),
+        1
+    ))
 }
 
 /// Sends an error to the driver station.
 pub fn send_error(code: i32, details: &CStr) -> HALResult<()> {
-    let v = unsafe { HAL_SendError(1, code, 0, details.as_ptr(), c"".as_ptr(), c"".as_ptr(), 1) };
-    if v != 0 { Err(HALError(v)) } else { Ok(()) }
+    hal_retcall!(HAL_SendError(
+        1,
+        code,
+        0,
+        details.as_ptr(),
+        c"".as_ptr(),
+        c"".as_ptr(),
+        1
+    ))
 }
 
 /// Sets the print error implementation to a given function pointer.
@@ -54,8 +70,7 @@ pub unsafe fn set_print_error_impl(print_fn: Option<fn(&str)>) {
 /// Send a line to the driver station console.
 pub fn send_console_line(line: &str) -> HALResult<()> {
     let c_line = CString::new(line).unwrap();
-    let v = unsafe { HAL_SendConsoleLine(c_line.as_ptr()) };
-    if v != 0 { Err(HALError(v)) } else { Ok(()) }
+    hal_retcall!(HAL_SendConsoleLine(c_line.as_ptr()))
 }
 
 /// Converts an Option<&CStr> into an allocation location pointer.

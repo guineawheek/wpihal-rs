@@ -1,167 +1,151 @@
 use wpihal_sys::{
-    HAL_AllianceStationID, HAL_ControlWord, HAL_GetAllJoystickData, HAL_GetAllianceStation,
-    HAL_GetControlWord, HAL_GetJoystickAxes, HAL_GetJoystickDescriptor, HAL_GetJoystickIsGamepad,
-    HAL_GetJoystickName, HAL_GetJoystickPOVs, HAL_GetMatchInfo, HAL_GetMatchTime,
+    HAL_AllianceStationID, HAL_ControlWord, HAL_GameData, HAL_GetAllJoystickData,
+    HAL_GetAllianceStation, HAL_GetControlWord, HAL_GetGameData, HAL_GetJoystickAxes,
+    HAL_GetJoystickButtons, HAL_GetJoystickDescriptor, HAL_GetJoystickGamepadType,
+    HAL_GetJoystickIsGamepad, HAL_GetJoystickName, HAL_GetJoystickPOVs,
+    HAL_GetJoystickSupportedOutputs, HAL_GetJoystickTouchpads, HAL_GetMatchInfo, HAL_GetMatchTime,
     HAL_GetOutputsEnabled, HAL_JoystickAxes, HAL_JoystickButtons, HAL_JoystickDescriptor,
-    HAL_JoystickPOVs, HAL_MatchInfo, HAL_MatchType, HAL_ObserveUserProgramStarting,
-    HAL_RefreshDSData, HAL_RobotMode,
+    HAL_JoystickPOVs, HAL_JoystickTouchpads, HAL_MatchInfo, HAL_MatchType,
+    HAL_ObserveUserProgramStarting, HAL_RefreshDSData, HAL_RobotMode, HAL_SetJoystickLeds,
+    HAL_SetJoystickRumble,
 };
 use wpiutil::wpistring::WPIString;
 
 use crate::{
     error::{HALError, HALResult},
-    hal_call,
+    hal_call, hal_retcall,
 };
-
-pub type RobotMode = HAL_RobotMode;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct ControlWord(i64);
-impl ControlWord {
-    pub fn new(
-        op_mode_hash: i64,
-        robot_mode: RobotMode,
-        enabled: bool,
-        e_stop: bool,
-        fms_attached: bool,
-        ds_attached: bool,
-    ) -> i64 {
-        todo!()
-    }
-
-    pub fn enabled(&self) -> bool {
-        self.0 & 0b1 != 0
-    }
-
-    pub fn autonomous(&self) -> bool {
-        self.0 & 0b10 != 0
-    }
-
-    pub fn test(&self) -> bool {
-        self.0 & 0b100 != 0
-    }
-
-    pub fn estop(&self) -> bool {
-        self.0 & 0b1000 != 0
-    }
-
-    pub fn fms_attached(&self) -> bool {
-        self.0 & 0b10000 != 0
-    }
-
-    pub fn ds_attached(&self) -> bool {
-        self.0 & 0b100000 != 0
-    }
-
-    pub fn reserved(&self) -> u32 {
-        self.0 >> 6
-    }
-}
-
-pub fn get_control_word() -> HALResult<ControlWord> {
-    unsafe {
-        let mut word: HAL_ControlWord = core::mem::transmute(0u32);
-        match HAL_GetControlWord(&mut word) {
-            0 => Ok(core::mem::transmute(word)),
-            err => Err(HALError(err)),
-        }
-    }
-}
 
 pub fn get_alliance_station() -> HALResult<AllianceStationID> {
     hal_call!(HAL_GetAllianceStation())
 }
 
-pub fn get_joystick_axes(joystick_num: i32) -> HALResult<JoystickAxes> {
-    unsafe {
-        let mut axes: HAL_JoystickAxes = core::mem::zeroed();
-        match HAL_GetJoystickAxes(joystick_num, &mut axes) {
-            0 => Ok(axes),
-            err => Err(HALError(err)),
+/// Holding struct for all joystick data.
+#[derive(Debug, Clone, Default)]
+pub struct AllJoystickData {
+    pub axes: JoystickAxes,
+    pub povs: JoystickPOVs,
+    pub buttons: JoystickButtons,
+    pub touchpads: JoystickTouchpads,
+}
+
+/// Joystick of a given index, e.g. `Joystick(0)` is joystick 0.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Joystick(pub i32);
+
+impl Joystick {
+    pub fn axes(&self) -> HALResult<JoystickAxes> {
+        hal_retcall!(HAL_GetJoystickAxes(self.0) -> JoystickAxes)
+    }
+
+    pub fn povs(&self) -> HALResult<JoystickPOVs> {
+        hal_retcall!(HAL_GetJoystickPOVs(self.0) -> JoystickPOVs)
+    }
+
+    pub fn buttons(&self) -> HALResult<JoystickButtons> {
+        hal_retcall!(HAL_GetJoystickButtons(self.0) -> JoystickButtons)
+    }
+
+    pub fn touchpads(&self) -> HALResult<JoystickTouchpads> {
+        hal_retcall!(HAL_GetJoystickTouchpads(self.0) -> JoystickTouchpads)
+    }
+
+    pub fn all_data(&self) -> AllJoystickData {
+        let mut data = AllJoystickData::default();
+        unsafe {
+            HAL_GetAllJoystickData(
+                self.0,
+                &mut data.axes,
+                &mut data.povs,
+                &mut data.buttons,
+                &mut data.touchpads,
+            );
+        }
+        data
+    }
+
+    pub fn descriptor(&self) -> HALResult<JoystickDescriptor> {
+        hal_retcall!(HAL_GetJoystickDescriptor(self.0) -> JoystickDescriptor)
+    }
+
+    pub fn is_gamepad(&self) -> bool {
+        unsafe { HAL_GetJoystickIsGamepad(self.0) != 0 }
+    }
+
+    pub fn gamepad_type(&self) -> i32 {
+        unsafe { HAL_GetJoystickGamepadType(self.0) }
+    }
+
+    /// Get supported outputs.
+    /// This appears to be internally sourced from `GenericHID`'s `SupportedOutputs` bitflag.
+    pub fn supported_outputs(&self) -> i32 {
+        unsafe { HAL_GetJoystickSupportedOutputs(self.0) }
+    }
+
+    /// Gets the joystick name.
+    pub fn name(&self) -> WPIString {
+        let mut name: wpiutil::wpistring::RawWPIString = Default::default();
+        unsafe {
+            HAL_GetJoystickName(&mut name, self.0);
+            WPIString::from_raw(name)
         }
     }
-}
 
-pub fn get_joystick_povs(joystick_num: i32) -> HALResult<JoystickPOVs> {
-    unsafe {
-        let mut povs: HAL_JoystickPOVs = core::mem::zeroed();
-        match HAL_GetJoystickPOVs(joystick_num, &mut povs) {
-            0 => Ok(povs),
-            err => Err(HALError(err)),
-        }
-    }
-}
-
-pub fn get_joystick_buttons(joystick_num: i32) -> HALResult<JoystickPOVs> {
-    unsafe {
-        let mut povs: HAL_JoystickPOVs = core::mem::zeroed();
-        match HAL_GetJoystickPOVs(joystick_num, &mut povs) {
-            0 => Ok(povs),
-            err => Err(HALError(err)),
-        }
-    }
-}
-
-pub fn get_all_joystick_data() -> (JoystickAxes, JoystickPOVs, JoystickButtons) {
-    let mut axes = JoystickAxes::default();
-    let mut povs = JoystickPOVs::default();
-    let mut buttons = JoystickButtons::default();
-    unsafe {
-        HAL_GetAllJoystickData(&mut axes, &mut povs, &mut buttons);
-    }
-    (axes, povs, buttons)
-}
-
-pub fn get_joystick_descriptor(joystick_num: i32) -> HALResult<JoystickDescriptor> {
-    unsafe {
-        let mut desc: HAL_JoystickDescriptor = core::mem::zeroed();
-        match HAL_GetJoystickDescriptor(joystick_num, &mut desc) {
-            0 => Ok(desc),
-            err => Err(HALError(err)),
-        }
-    }
-}
-
-pub fn get_joystick_is_gamepad(joystick_num: i32) -> bool {
-    unsafe { HAL_GetJoystickIsGamepad(joystick_num) != 0 }
-}
-
-pub fn get_joystick_type(joystick_num: i32) -> i32 {
-    unsafe { HAL_GetJoystickType(joystick_num) }
-}
-
-pub fn get_joystick_name(joystick_num: i32) -> WPIString {
-    let mut name = WPI_String::default();
-    unsafe {
-        HAL_GetJoystickName(&mut name, joystick_num);
-        WPIString::from_raw(wpiutil::wpistring::WPI_String {
-            str_: name.str_,
-            len: name.len,
-        })
-    }
-}
-
-pub fn get_joystick_axis_type(joystick_num: i32, axis: i32) -> i32 {
-    unsafe { HAL_GetJoystickAxisType(joystick_num, axis) }
-}
-
-pub fn set_joystick_outputs(
-    joystick_num: i32,
-    outputs: u64,
-    left_rumble: u16,
-    right_rumble: u16,
-) -> HALResult<()> {
-    unsafe {
-        match HAL_SetJoystickOutputs(
-            joystick_num,
-            outputs as i64,
+    pub fn set_joystick_outputs(
+        &self,
+        left_rumble: u16,
+        right_rumble: u16,
+        left_trigger_rumble: u16,
+        right_trigger_rumble: u16,
+    ) -> HALResult<()> {
+        hal_retcall!(HAL_SetJoystickRumble(
+            self.0,
             left_rumble as i32,
             right_rumble as i32,
-        ) {
-            0 => Ok(()),
-            err => Err(HALError(err)),
+            left_trigger_rumble as i32,
+            right_trigger_rumble as i32
+        ))
+    }
+
+    pub fn set_leds(&self, rgb: u32) -> HALResult<()> {
+        hal_retcall!(HAL_SetJoystickLeds(self.0, rgb as _))
+    }
+}
+
+const GAME_DATA_LEN: usize = 9;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GameData([u8; GAME_DATA_LEN]);
+impl GameData {
+    /// # Safety
+    /// You gotta be sure that `data.gameData` is utf8.
+    pub const unsafe fn new(data: HAL_GameData) -> Self {
+        unsafe {
+            // this will freak out if the sizes are not equal anyway.
+            Self(core::mem::transmute(data.gameData))
         }
+    }
+
+    /// inner
+    pub const fn as_bytes(&self) -> [u8; GAME_DATA_LEN] {
+        self.0
+    }
+
+    /// print as string
+    pub const fn as_str<'a>(&'a self) -> &'a str {
+        let mut len = 0;
+        // find null terminator
+        while len < self.0.len() && self.0[len] != 0 {
+            len += 1;
+        }
+
+        // SAFETY: i trust wpilib to give me utf8.
+        unsafe { core::str::from_utf8_unchecked(self.0.split_at_unchecked(len).0) }
+    }
+
+    /// Get new game data.
+    pub fn get() -> HALResult<Self> {
+        // SAFETY: i trust wpilib to not give me anything not utf8
+        unsafe { hal_retcall!(HAL_GetGameData() -> HAL_GameData).map(|v| Self::new(v)) }
     }
 }
 
@@ -225,4 +209,5 @@ pub type JoystickAxes = HAL_JoystickAxes;
 pub type JoystickPOVs = HAL_JoystickPOVs;
 pub type JoystickButtons = HAL_JoystickButtons;
 pub type JoystickDescriptor = HAL_JoystickDescriptor;
+pub type JoystickTouchpads = HAL_JoystickTouchpads;
 pub type MatchInfo = HAL_MatchInfo;

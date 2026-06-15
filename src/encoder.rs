@@ -8,7 +8,7 @@ use wpihal_sys::{
     HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice,
 };
 
-use crate::{error::HALResult, hal_call, sim_device::SimDevice};
+use crate::{error::HALResult, hal_bool, hal_call, sim_device::SimDevice};
 
 pub type IndexingType = HAL_EncoderIndexingType;
 pub type EncodingType = HAL_EncoderEncodingType;
@@ -72,11 +72,11 @@ impl<'a> Encoder {
     }
 
     pub fn get_stopped(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetEncoderStopped(self.handle))? != 0)
+        hal_call!(HAL_GetEncoderStopped(self.handle)).map(hal_bool)
     }
 
     pub fn get_direction(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetEncoderDirection(self.handle))? != 0)
+        hal_call!(HAL_GetEncoderDirection(self.handle)).map(hal_bool)
     }
 
     pub fn get_distance(&self) -> HALResult<f64> {

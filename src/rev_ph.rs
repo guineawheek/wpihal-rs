@@ -15,7 +15,7 @@ use wpihal_sys::{
 
 use crate::{
     error::{HALResult, allocation_location_ptr},
-    hal_call,
+    hal_bool, hal_call,
 };
 
 pub type REVPHCompressorConfig = HAL_REVPHCompressorConfig;
@@ -46,7 +46,7 @@ impl REVPH {
     }
 
     pub fn get_compressor(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetREVPHCompressor(self.0))? != 0)
+        hal_call!(HAL_GetREVPHCompressor(self.0)).map(hal_bool)
     }
 
     pub fn set_compressor_config(&mut self, cfg: REVPHCompressorConfig) -> HALResult<()> {
@@ -81,7 +81,7 @@ impl REVPH {
     }
 
     pub fn get_pressure_switch(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetREVPHPressureSwitch(self.0))? != 0)
+        hal_call!(HAL_GetREVPHPressureSwitch(self.0)).map(hal_bool)
     }
 
     pub fn get_compressor_current(&self) -> HALResult<f64> {

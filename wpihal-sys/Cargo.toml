@@ -17,6 +17,7 @@ wpilib-nativeutils = { path = "../wpilib-nativeutils" }
 bindgen.workspace = true
 regex.workspace = true
 cc.workspace = true
+convert_case.workspace = true
 
 [dependencies]
 wpiutil-sys = { path = "../wpiutil-sys"}

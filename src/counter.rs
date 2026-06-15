@@ -8,7 +8,7 @@ use wpihal_sys::{
 
 use crate::{
     error::{HALResult, allocation_location_ptr},
-    hal_call,
+    hal_bool, hal_call,
 };
 
 pub struct Counter {
@@ -58,7 +58,7 @@ impl Counter {
     }
 
     pub fn get_stopped(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetCounterStopped(self.handle))? != 0)
+        hal_call!(HAL_GetCounterStopped(self.handle)).map(hal_bool)
     }
 
     pub fn raw_handle(&self) -> HAL_CounterHandle {

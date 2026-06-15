@@ -11,7 +11,7 @@ use wpihal_sys::{
 use crate::{
     Handle,
     error::{HALResult, allocation_location_ptr},
-    hal_call,
+    hal_bool, hal_call,
     sim_device::SimDevice,
 };
 
@@ -65,11 +65,11 @@ impl DIO {
     }
 
     pub fn get(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetDIO(self.0))? != 0)
+        hal_call!(HAL_GetDIO(self.0)).map(hal_bool)
     }
 
     pub fn get_direction(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_GetDIODirection(self.0))? != 0)
+        hal_call!(HAL_GetDIODirection(self.0)).map(hal_bool)
     }
 
     pub fn pulse(&mut self, pulse_length_seconds: f64) -> HALResult<()> {
@@ -81,11 +81,11 @@ impl DIO {
     }
 
     pub fn is_pulsing(&self) -> HALResult<bool> {
-        Ok(hal_call!(HAL_IsPulsing(self.0))? != 0)
+        hal_call!(HAL_IsPulsing(self.0)).map(hal_bool)
     }
 
     pub fn is_any_pulsing() -> HALResult<bool> {
-        Ok(hal_call!(HAL_IsAnyPulsing())? != 0)
+        hal_call!(HAL_IsAnyPulsing()).map(hal_bool)
     }
 
     pub fn check_channel(channel: i32) -> bool {

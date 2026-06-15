@@ -1,13 +1,14 @@
 #![allow(unused)]
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fmt::format,
     path::{Path, PathBuf},
     sync::LazyLock,
 };
 
 use bindgen::{RustTarget, callbacks::ParseCallbacks};
+use convert_case::Casing;
 use wpilib_nativeutils::{Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain};
 
 pub fn main() {
@@ -120,6 +121,7 @@ fn generate_bindings_for_header(
         .rust_target(RustTarget::stable(85, 0).unwrap())
         .header(header)
         .derive_default(true)
+        .derive_partialeq(true)
         .clang_arg(format!(
             "-I{}",
             wpilib_nativeutils::stringify_path(
@@ -136,7 +138,7 @@ fn generate_bindings_for_header(
             non_exhaustive: false,
         })
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        .parse_callbacks(Box::new(WPIHalCallbacks))
+        .parse_callbacks(Box::new(WPIHalCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");
 
@@ -145,8 +147,60 @@ fn generate_bindings_for_header(
         .expect("Couldn't write bindings!");
 }
 
+#[derive(Debug, Copy, Clone)]
+struct HalEnum {
+    prefix: &'static str,
+    name: &'static str,
+    variant_prefix: &'static str,
+}
+
+impl HalEnum {
+    pub const fn hal(name: &'static str, variant_prefix: &'static str) -> Self {
+        Self {
+            prefix: "HAL",
+            name,
+            variant_prefix,
+        }
+    }
+}
+
+const ENUMS_TO_FROBNICATE: &[HalEnum] = &[
+    HalEnum::hal("AddressableLEDColorOrder", "HAL_ALED_"),
+    HalEnum::hal("AlertLevel", "HAL_ALERT_"),
+    HalEnum::hal("CANDeviceType", "HAL_CAN_DEV_"),
+    HalEnum::hal("CANManufacturer", "HAL_CAN_MAN_"),
+    HalEnum::hal("CANFlags", "HAL_CAN_"),
+    HalEnum::hal("CANBusMap", "HAL_CAN_BUS_"),
+    HalEnum::hal("AllianceStationID", "HAL_ALLIANCE_STATION_"),
+    HalEnum::hal("MatchType", "HAL_MATCH_TYPE_"),
+    HalEnum::hal("RobotMode", "HAL_ROBOT_MODE_"),
+    HalEnum::hal("JoystickPOV", "HAL_JOYSTICK_POV_"),
+    HalEnum::hal("EncoderIndexingType", "HAL_ENCODER_INDEX_"),
+    HalEnum::hal("EncoderEncodingType", "HAL_ENCODER_"),
+    HalEnum::hal("RuntimeType", "HAL_RUNTIME_"),
+    HalEnum::hal("I2CPort", "HAL_I2C_"),
+    HalEnum::hal("PowerDistributionType", "HAL_POWER_DISTRIBUTION_"),
+    HalEnum::hal("REVPHCompressorConfigType", "HAL_REVPH_COMPRESSOR_CONFIG_"),
+    HalEnum::hal("SerialPort", "HAL_SERIAL_PORT_"),
+    HalEnum::hal("SimValueDirection", "HAL_SIM_VALUE_"),
+];
+
 #[derive(Debug)]
-pub struct WPIHalCallbacks;
+pub struct WPIHalCallbacks {
+    enum_map: HashMap<String, HalEnum>,
+}
+
+impl WPIHalCallbacks {
+    pub fn new() -> Self {
+        Self {
+            enum_map: HashMap::from_iter(
+                ENUMS_TO_FROBNICATE
+                    .iter()
+                    .map(|he| (format!("{}_{}", he.prefix, he.name), *he)),
+            ),
+        }
+    }
+}
 
 impl ParseCallbacks for WPIHalCallbacks {
     fn enum_variant_name(
@@ -156,43 +210,23 @@ impl ParseCallbacks for WPIHalCallbacks {
         _variant_value: bindgen::callbacks::EnumVariantValue,
     ) -> Option<String> {
         let enum_name = enum_name?;
-        let name = format!("{}_", enum_name);
-        if original_variant_name.starts_with(name.as_str()) {
-            let ov_name = original_variant_name.strip_prefix(name.as_str()).unwrap();
-            Some(ov_name.to_string())
-        } else {
+        //let hal_enum_name = format!("HAL_{enum_name}");
+        let mut proposed_rename = if let Some(hal_enum) = self.enum_map.get(enum_name).copied() {
             // rewrite enums to not have prefixes
             // search `HAL_ENUM` in codebase for instances
-            let prefix = match enum_name {
-                "HAL_AddressableLEDColorOrder" => "HAL_ALED_",
-                "HAL_AlertLevel" => "HAL_ALERT_",
-                "HAL_CANDeviceType" => "HAL_CAN_DEV_",
-                "HAL_CANManufacturer" => "HAL_CAN_MAN_",
-                "HAL_CANFlags" => "HAL_CAN_",
-                "HAL_CANBusMap" => "HAL_CAN_BUS_",
-                "HAL_AllianceStationID" => "HAL_ALLIANCE_STATION_",
-                "HAL_MatchType" => "HAL_MATCH_TYPE_",
-                "HAL_RobotMode" => "HAL_ROBOT_MODE_",
-                "HAL_JoystickPOV" => "HAL_JOYSTICK_POV_",
-                "HAL_EncoderIndexingType" => "HAL_ENCODER_INDEX_",
-                "HAL_EncoderEncodingType" => "HAL_",
-                "HAL_RuntimeType" => "HAL_RUNTIME_",
-                "HAL_I2CPort" => "HAL_I2C_",
-                "HAL_PowerDistributionType" => "HAL_POWER_DISTRIBUTION_",
-                "HAL_REVPHCompressorConfigType" => "HAL_REVPH_COMPRESSOR_CONFIG_",
-                "HAL_SerialPort" => "HAL_SERIAL_PORT_",
-                "HAL_SimValueDirection" => "HAL_SIM_VALUE_",
-                _ => {
-                    return None;
-                }
-            };
 
-            Some(
-                original_variant_name
-                    .strip_prefix(prefix)
-                    .unwrap()
-                    .to_string(),
-            )
+            original_variant_name
+                .strip_prefix(hal_enum.variant_prefix)
+                .unwrap()
+                .to_case(convert_case::Case::Pascal)
+        } else {
+            original_variant_name.to_case(convert_case::Case::Pascal)
+        };
+
+        if proposed_rename.chars().nth(0)?.is_ascii_digit() {
+            proposed_rename = format!("k{proposed_rename}");
         }
+
+        Some(proposed_rename)
     }
 }

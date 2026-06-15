@@ -5,7 +5,7 @@ use std::{
 
 use error::{HALError, HALResult};
 use wpihal_sys::{
-    HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount, HAL_GetLastError,
+    HAL_Bool, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount, HAL_GetLastError,
     HAL_GetMonotonicTime, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber,
     HAL_GetSystemActive, HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize,
     HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter, HAL_SimPeriodicBefore,
@@ -51,6 +51,8 @@ pub mod imu;
 pub mod main_loop;
 /// notifiers
 pub mod notifier;
+/// Op modes
+pub mod op_mode;
 /// ports
 pub mod ports;
 /// power
@@ -94,6 +96,10 @@ pub trait Handle<T> {
     unsafe fn from_raw_handle(handle: T) -> Self;
 }
 
+pub(crate) const fn hal_bool(b: HAL_Bool) -> bool {
+    b != 0
+}
+
 /// Wraps a C/C++ HAL function call that looks like `T foo(arg1, arg2, arg3, ... , int32_t* status)`
 /// and turns that status into a `HALResult<T>`, with a non-zero status code returning in
 /// the `Err` variant.
@@ -115,17 +121,16 @@ macro_rules! hal_call {
     }};
 }
 
-/// Wraps a C/C++ HAL function call of the form `HAL_Status foo(arg1, ...) -> T`
+/// Wraps a C/C++ HAL function call of the form `HAL_Status foo(arg1, ..., ret: *mut T)`
 /// and turns that into a `HALResult<T>`, with a non-zero status code returning in the `Err` variant.
 #[macro_export]
 macro_rules! hal_retcall {
-    ($function:ident($($prev_arg:expr)*; -> $out_ty:ty; $($post_arg:expr),* $(,)?)) => {{
-        let mut out = core::mem::MaybeUninit::<$out_ty>::uninit();
+    ($function:ident($($prev_arg:expr),* $(,)?) -> $out_ty:ty) => {{
+        let mut out = core::mem::MaybeUninit::<$out_ty>::zeroed();
         let status = unsafe {
             $function(
                 $($prev_arg,)*
                 out.as_mut_ptr(),
-                $($post_arg,)*
             )
         };
         if status == 0 {
@@ -157,7 +162,7 @@ pub fn get_last_error() -> (HALError, String) {
 }
 
 pub fn get_serial_number() -> WPIString {
-    let mut s: wpiutil::wpistring::WPI_String = Default::default();
+    let mut s: wpiutil::wpistring::RawWPIString = Default::default();
     unsafe {
         HAL_GetSerialNumber(&mut s);
         WPIString::from_raw(s)
@@ -165,7 +170,7 @@ pub fn get_serial_number() -> WPIString {
 }
 
 pub fn get_comments() -> WPIString {
-    let mut s: wpiutil::wpistring::WPI_String = Default::default();
+    let mut s: wpiutil::wpistring::RawWPIString = Default::default();
     unsafe {
         HAL_GetComments(&mut s);
         WPIString::from_raw(s)
@@ -181,11 +186,11 @@ pub fn get_runtime_type() -> HAL_RuntimeType {
 }
 
 pub fn get_system_active() -> HALResult<bool> {
-    Ok(hal_call!(HAL_GetSystemActive())? != 0)
+    hal_call!(HAL_GetSystemActive()).map(hal_bool)
 }
 
 pub fn get_browned_out() -> HALResult<bool> {
-    Ok(hal_call!(HAL_GetBrownedOut())? != 0)
+    hal_call!(HAL_GetBrownedOut()).map(hal_bool)
 }
 
 pub fn get_comms_disable_count() -> HALResult<i32> {
@@ -201,11 +206,11 @@ pub fn get_monotonic_duration() -> Duration {
 }
 
 pub fn get_rsl_state() -> HALResult<bool> {
-    Ok(hal_call!(HAL_GetRSLState())? != 0)
+    hal_call!(HAL_GetRSLState()).map(hal_bool)
 }
 
 pub fn get_system_time_valid() -> HALResult<bool> {
-    Ok(hal_call!(HAL_GetSystemTimeValid())? != 0)
+    hal_call!(HAL_GetSystemTimeValid()).map(hal_bool)
 }
 
 #[repr(i32)]
