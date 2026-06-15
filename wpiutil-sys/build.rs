@@ -59,6 +59,7 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
         .rust_target(RustTarget::stable(85, 0).unwrap())
         .header("UtilInclude.h")
         .derive_default(true)
+        .derive_copy(false)
         .clang_arg(format!(
             "-I{}",
             wpilib_nativeutils::stringify_path(

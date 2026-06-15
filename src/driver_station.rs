@@ -1,12 +1,10 @@
 use wpihal_sys::{
     HAL_AllianceStationID, HAL_ControlWord, HAL_GetAllJoystickData, HAL_GetAllianceStation,
-    HAL_GetControlWord, HAL_GetJoystickAxes, HAL_GetJoystickAxisType, HAL_GetJoystickDescriptor,
-    HAL_GetJoystickIsGamepad, HAL_GetJoystickName, HAL_GetJoystickPOVs, HAL_GetJoystickType,
-    HAL_GetMatchInfo, HAL_GetMatchTime, HAL_GetOutputsEnabled, HAL_JoystickAxes,
-    HAL_JoystickButtons, HAL_JoystickDescriptor, HAL_JoystickPOVs, HAL_MatchInfo, HAL_MatchType,
-    HAL_ObserveUserProgramAutonomous, HAL_ObserveUserProgramDisabled,
-    HAL_ObserveUserProgramStarting, HAL_ObserveUserProgramTeleop, HAL_ObserveUserProgramTest,
-    HAL_RefreshDSData, HAL_SetJoystickOutputs, WPI_String,
+    HAL_GetControlWord, HAL_GetJoystickAxes, HAL_GetJoystickDescriptor, HAL_GetJoystickIsGamepad,
+    HAL_GetJoystickName, HAL_GetJoystickPOVs, HAL_GetMatchInfo, HAL_GetMatchTime,
+    HAL_GetOutputsEnabled, HAL_JoystickAxes, HAL_JoystickButtons, HAL_JoystickDescriptor,
+    HAL_JoystickPOVs, HAL_MatchInfo, HAL_MatchType, HAL_ObserveUserProgramStarting,
+    HAL_RefreshDSData, HAL_RobotMode,
 };
 use wpiutil::wpistring::WPIString;
 
@@ -15,10 +13,23 @@ use crate::{
     hal_call,
 };
 
+pub type RobotMode = HAL_RobotMode;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct ControlWord(pub u32);
+pub struct ControlWord(i64);
 impl ControlWord {
+    pub fn new(
+        op_mode_hash: i64,
+        robot_mode: RobotMode,
+        enabled: bool,
+        e_stop: bool,
+        fms_attached: bool,
+        ds_attached: bool,
+    ) -> i64 {
+        todo!()
+    }
+
     pub fn enabled(&self) -> bool {
         self.0 & 0b1 != 0
     }
@@ -205,36 +216,6 @@ pub fn refresh_ds_data() -> bool {
 pub fn observe_user_program_starting() {
     unsafe {
         HAL_ObserveUserProgramStarting();
-    }
-}
-
-///
-/// Sets the disabled flag in the DS.
-///
-/// This is used for the DS to ensure the robot is properly responding to its
-/// state request. Ensure this gets called about every 50ms, or the robot will be
-/// disabled by the DS.
-pub fn observe_user_program_disabled() {
-    unsafe {
-        HAL_ObserveUserProgramDisabled();
-    }
-}
-
-pub fn observe_user_program_autonomous() {
-    unsafe {
-        HAL_ObserveUserProgramAutonomous();
-    }
-}
-
-pub fn observe_user_program_teleop() {
-    unsafe {
-        HAL_ObserveUserProgramTeleop();
-    }
-}
-
-pub fn observe_user_program_test() {
-    unsafe {
-        HAL_ObserveUserProgramTest();
     }
 }
 

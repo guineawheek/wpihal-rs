@@ -88,7 +88,7 @@ pub fn main() {
     generate_bindings_for_header(
         bindgen::Builder::default(),
         "shim/HALInclude.h",
-        r"(HAL_|WPI_|HALSIM_|_HALShim_)\w+",
+        r"(HAL_|HALSIM_|_HALShim_)\w+",
         "hal_bindings.rs",
     );
     cc::Build::new()
@@ -130,12 +130,13 @@ fn generate_bindings_for_header(
         .allowlist_type(regex)
         .allowlist_function(regex)
         .allowlist_var(regex)
+        .blocklist_type(r"WPI_\w+")
         .opaque_type("std::.*")
         .default_enum_style(bindgen::EnumVariation::Rust {
             non_exhaustive: false,
         })
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        .parse_callbacks(Box::new(WPIHalCallbacks {}))
+        .parse_callbacks(Box::new(WPIHalCallbacks))
         .generate()
         .expect("Unable to generate bindings");
 
@@ -145,7 +146,7 @@ fn generate_bindings_for_header(
 }
 
 #[derive(Debug)]
-pub struct WPIHalCallbacks {}
+pub struct WPIHalCallbacks;
 
 impl ParseCallbacks for WPIHalCallbacks {
     fn enum_variant_name(
@@ -193,31 +194,5 @@ impl ParseCallbacks for WPIHalCallbacks {
                     .to_string(),
             )
         }
-    }
-}
-pub struct ResourceEnumBuilder {
-    name: String,
-    variants: BTreeMap<String, i32>,
-}
-
-impl ResourceEnumBuilder {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: name.to_string(),
-            variants: Default::default(),
-        }
-    }
-    pub fn generate_enum(&self) -> String {
-        let mut s = format!(
-            "#[derive(Debug, Copy, Clone, PartialEq, Eq)]\n#[repr(i32)]\npub enum {} {{\n",
-            self.name
-        );
-        let mut variants: Vec<(&String, &i32)> = self.variants.iter().collect();
-        variants.sort_by(|(_, v1), (_, v2)| v1.cmp(v2));
-        for (k, v) in variants {
-            s.push_str(format!("    k{k} = {v},\n").as_str());
-        }
-        s.push_str("}\n");
-        s
     }
 }

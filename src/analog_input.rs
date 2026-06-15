@@ -2,11 +2,8 @@ use std::ffi::CStr;
 
 use wpihal_sys::{
     HAL_CheckAnalogInputChannel, HAL_CheckAnalogModule, HAL_FreeAnalogInputPort,
-    HAL_GetAnalogAverageBits, HAL_GetAnalogAverageValue, HAL_GetAnalogAverageVoltage,
-    HAL_GetAnalogLSBWeight, HAL_GetAnalogOffset, HAL_GetAnalogOversampleBits,
-    HAL_GetAnalogSampleRate, HAL_GetAnalogValue, HAL_GetAnalogValueToVolts, HAL_GetAnalogVoltage,
-    HAL_GetAnalogVoltsToValue, HAL_InitializeAnalogInputPort, HAL_SetAnalogAverageBits,
-    HAL_SetAnalogInputSimDevice, HAL_SetAnalogOversampleBits, HAL_SetAnalogSampleRate,
+    HAL_GetAnalogValue, HAL_GetAnalogValueToVolts, HAL_GetAnalogVoltage, HAL_GetAnalogVoltsToValue,
+    HAL_InitializeAnalogInputPort, HAL_SetAnalogInputSimDevice,
 };
 
 use crate::{
@@ -37,38 +34,8 @@ impl AnalogInput {
         }
     }
 
-    /// Applies universally to all analog inputs.
-    pub fn set_sample_rate(samples_per_second: f64) -> HALResult<()> {
-        hal_call!(HAL_SetAnalogSampleRate(samples_per_second))
-    }
-
-    /// Applies universally to all analog inputs.
-    pub fn get_sample_rate() -> HALResult<f64> {
-        hal_call!(HAL_GetAnalogSampleRate())
-    }
-
-    pub fn set_average_bits(&mut self, bits: i32) -> HALResult<()> {
-        hal_call!(HAL_SetAnalogAverageBits(self.0, bits))
-    }
-
-    pub fn get_average_bits(&self) -> HALResult<i32> {
-        hal_call!(HAL_GetAnalogAverageBits(self.0))
-    }
-
-    pub fn set_oversample_bits(&mut self, bits: i32) -> HALResult<()> {
-        hal_call!(HAL_SetAnalogOversampleBits(self.0, bits))
-    }
-
-    pub fn get_oversample_bits(&self) -> HALResult<i32> {
-        hal_call!(HAL_GetAnalogOversampleBits(self.0))
-    }
-
     pub fn get_value(&self) -> HALResult<i32> {
         hal_call!(HAL_GetAnalogValue(self.0))
-    }
-
-    pub fn get_average_value(&self) -> HALResult<i32> {
-        hal_call!(HAL_GetAnalogAverageValue(self.0))
     }
 
     pub fn get_volts_to_value(&self, voltage: f64) -> HALResult<i32> {
@@ -77,18 +44,6 @@ impl AnalogInput {
 
     pub fn get_voltage(&self) -> HALResult<f64> {
         hal_call!(HAL_GetAnalogVoltage(self.0))
-    }
-
-    pub fn get_average_voltage(&self) -> HALResult<f64> {
-        hal_call!(HAL_GetAnalogAverageVoltage(self.0))
-    }
-
-    pub fn get_lsb_weight(&self) -> HALResult<i32> {
-        hal_call!(HAL_GetAnalogLSBWeight(self.0))
-    }
-
-    pub fn get_offset(&self) -> HALResult<i32> {
-        hal_call!(HAL_GetAnalogOffset(self.0))
     }
 
     pub fn get_value_to_volts(&self, raw_value: i32) -> HALResult<f64> {

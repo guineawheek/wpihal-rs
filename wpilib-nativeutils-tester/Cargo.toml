@@ -8,4 +8,4 @@ edition = "2024"
 
 [dependencies]
 wpilib-nativeutils = { path = "../wpilib-nativeutils" }
-regex = "1.11.1"
+regex.workspace = true

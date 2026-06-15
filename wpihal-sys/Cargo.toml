@@ -9,8 +9,8 @@ edition = "2024"
 
 [features]
 default = ["shared", "robot-controller"]
-shared = []
-robot-controller = []
+shared = ["wpiutil-sys/shared"]
+robot-controller = ["wpiutil-sys/robot-controller"]
 
 [build-dependencies]
 wpilib-nativeutils = { path = "../wpilib-nativeutils" }
@@ -19,3 +19,4 @@ regex.workspace = true
 cc.workspace = true
 
 [dependencies]
+wpiutil-sys = { path = "../wpiutil-sys"}

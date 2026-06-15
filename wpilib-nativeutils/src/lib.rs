@@ -1,3 +1,5 @@
+//! Utilities for build.rs to download and process mavens and generate bindings.
+
 use std::{
     fmt::Display,
     io::Cursor,

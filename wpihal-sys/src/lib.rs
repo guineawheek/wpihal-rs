@@ -6,4 +6,6 @@
 #![allow(unused)]
 #![allow(improper_ctypes)]
 
+use wpiutil_sys::*;
+
 include!(concat!(env!("OUT_DIR"), "/hal_bindings.rs"));

@@ -1,6 +1,7 @@
+use std::thread::JoinHandle;
+
 #[cfg(unix)]
 use std::os::unix::thread::JoinHandleExt;
-use std::thread::JoinHandle;
 
 #[allow(unused)]
 use wpihal_sys::{
@@ -9,65 +10,40 @@ use wpihal_sys::{
 };
 
 use crate::error::HALResult;
-use crate::hal_call;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ThreadPriority {
-    pub priority: i32,
-    pub real_time: bool,
-}
+use crate::hal_retcall;
 
 /// Gets thread priority.
 /// No-op on windows.
 #[cfg(unix)]
-pub fn get_thread_priority<T>(handle: &JoinHandle<T>) -> HALResult<ThreadPriority> {
-    let pthread_t = handle.as_pthread_t() as NativeThreadHandle;
-    let mut is_real_time: i32 = 0;
-    let priority = hal_call!(HAL_GetThreadPriority(pthread_t, &mut is_real_time))?;
-
-    Ok(ThreadPriority {
-        priority,
-        real_time: is_real_time != 0,
-    })
+pub fn get_thread_priority<T>(handle: &JoinHandle<T>) -> HALResult<i32> {
+    hal_retcall!(HAL_GetThreadPriority(handle.as_pthread_t() as _; -> i32;))
 }
+/// Gets thread priority.
+/// No-op on windows.
 #[cfg(not(unix))]
-pub fn get_thread_priority<T>(_handle: &JoinHandle<T>) -> HALResult<ThreadPriority> {
-    Ok(ThreadPriority {
-        priority: 0,
-        real_time: false,
-    })
+pub fn get_thread_priority<T>(_handle: &JoinHandle<T>) -> HALResult<i32> {
+    Ok(0)
 }
 
-pub fn get_current_thread_priority() -> HALResult<ThreadPriority> {
-    let mut is_real_time: i32 = 0;
-    let priority = hal_call!(HAL_GetCurrentThreadPriority(&mut is_real_time))?;
-
-    Ok(ThreadPriority {
-        priority,
-        real_time: is_real_time != 0,
-    })
+/// Gets current thread priority.
+pub fn get_current_thread_priority() -> HALResult<i32> {
+    hal_retcall!(HAL_GetCurrentThreadPriority(;-> i32;))
 }
 
 /// Sets thread priority.
 /// No-op on windows.
 #[cfg(unix)]
-pub fn set_thread_priority<T>(handle: &JoinHandle<T>, priority: ThreadPriority) -> HALResult<bool> {
-    let pthread_t = handle.as_pthread_t() as NativeThreadHandle;
-    Ok(hal_call!(HAL_SetThreadPriority(
-        pthread_t,
-        priority.real_time as i32,
-        priority.priority
-    ))? != 0)
+pub fn set_thread_priority<T>(handle: &JoinHandle<T>, priority: i32) -> HALResult<()> {
+    hal_retcall!(HAL_SetThreadPriority(handle.as_pthread_t() as _, priority))
 }
 
+/// Sets thread priority.
+/// No-op on windows.
 #[cfg(not(unix))]
-pub fn set_thread_priority<T>(_handle: &JoinHandle<T>) -> HALResult<bool> {
-    Ok(true)
+pub fn set_thread_priority<T>(_handle: &JoinHandle<T>) -> HALResult<()> {
+    Ok()
 }
 
-pub fn set_current_thread_priority(priority: ThreadPriority) -> HALResult<bool> {
-    Ok(hal_call!(HAL_SetCurrentThreadPriority(
-        priority.real_time as i32,
-        priority.priority
-    ))? != 0)
+pub fn set_current_thread_priority(priority: i32) -> HALResult<()> {
+    hal_retcall!(HAL_SetCurrentThreadPriority(priority))
 }

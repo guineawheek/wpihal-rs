@@ -5,11 +5,10 @@ use std::{
 
 use error::{HALError, HALResult};
 use wpihal_sys::{
-    HAL_ExpandFPGATime, HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount,
-    HAL_GetFPGATime, HAL_GetLastError, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber,
-    HAL_GetSystemActive, HAL_GetSystemClockTicksPerMicrosecond, HAL_GetSystemTimeValid,
-    HAL_GetTeamNumber, HAL_Initialize, HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter,
-    HAL_SimPeriodicBefore, WPI_String,
+    HAL_GetBrownedOut, HAL_GetComments, HAL_GetCommsDisableCount, HAL_GetLastError,
+    HAL_GetMonotonicTime, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber,
+    HAL_GetSystemActive, HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize,
+    HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter, HAL_SimPeriodicBefore,
 };
 use wpiutil::wpistring::WPIString;
 
@@ -26,10 +25,14 @@ pub mod analog_input;
 pub mod can;
 /// can api
 pub mod can_api;
+/// Control words
+pub mod control_word;
 /// counter
 pub mod counter;
 /// ctre pcm
 pub mod ctre_pcm;
+/// Dashboard opmode.
+pub mod dashboard_op_mode;
 /// digital i/o
 pub mod dio;
 /// driver station data
@@ -101,19 +104,46 @@ macro_rules! hal_call {
         let result = unsafe { $function($(
             $arg,
         )* &mut status as *mut i32) };
-        if status == 0 { Ok(result) } else { Err(crate::error::HALError::from(status)) }
+        if status == 0 { Ok(result) } else { Err($crate::error::HALError::from(status)) }
     }};
     ($namespace:path, $function:ident($($arg:expr),*)) => {{
         let mut status = 0;
         let result = unsafe { $namespace::$function($(
             $arg,
         )* &mut status as *mut i32) };
-        if status == 0 { Ok(result) } else { Err(crate::error::HALError::from(status)) }
+        if status == 0 { Ok(result) } else { Err($crate::error::HALError::from(status)) }
     }};
 }
 
-pub fn get_system_clock_ticks_per_microsecond() -> i32 {
-    unsafe { HAL_GetSystemClockTicksPerMicrosecond() }
+/// Wraps a C/C++ HAL function call of the form `HAL_Status foo(arg1, ...) -> T`
+/// and turns that into a `HALResult<T>`, with a non-zero status code returning in the `Err` variant.
+#[macro_export]
+macro_rules! hal_retcall {
+    ($function:ident($($prev_arg:expr)*; -> $out_ty:ty; $($post_arg:expr),* $(,)?)) => {{
+        let mut out = core::mem::MaybeUninit::<$out_ty>::uninit();
+        let status = unsafe {
+            $function(
+                $($prev_arg,)*
+                out.as_mut_ptr(),
+                $($post_arg,)*
+            )
+        };
+        if status == 0 {
+            unsafe {
+                Ok(out.assume_init())
+            }
+        } else {
+            Err($crate::error::HALError::from(status))
+        }
+    }};
+    ($function:ident($($arg:expr),* $(,)?)) => {{
+        let status = unsafe { $function($($arg),*) };
+        if status == 0 {
+            Ok(())
+        } else {
+            Err($crate::error::HALError::from(status))
+        }
+    }};
 }
 
 /// unlike the actual hal call this allocates.
@@ -127,24 +157,18 @@ pub fn get_last_error() -> (HALError, String) {
 }
 
 pub fn get_serial_number() -> WPIString {
-    let mut s: WPI_String = Default::default();
+    let mut s: wpiutil::wpistring::WPI_String = Default::default();
     unsafe {
         HAL_GetSerialNumber(&mut s);
-        WPIString::from_raw(wpiutil::wpistring::WPI_String {
-            str_: s.str_,
-            len: s.len,
-        })
+        WPIString::from_raw(s)
     }
 }
 
 pub fn get_comments() -> WPIString {
-    let mut s: WPI_String = Default::default();
+    let mut s: wpiutil::wpistring::WPI_String = Default::default();
     unsafe {
         HAL_GetComments(&mut s);
-        WPIString::from_raw(wpiutil::wpistring::WPI_String {
-            str_: s.str_,
-            len: s.len,
-        })
+        WPIString::from_raw(s)
     }
 }
 
@@ -168,16 +192,12 @@ pub fn get_comms_disable_count() -> HALResult<i32> {
     hal_call!(HAL_GetCommsDisableCount())
 }
 
-pub fn get_fpga_time() -> HALResult<u64> {
-    hal_call!(HAL_GetFPGATime())
+pub fn get_monotonic_time() -> u64 {
+    unsafe { HAL_GetMonotonicTime() }
 }
 
-pub fn get_fpga_duration() -> HALResult<Duration> {
-    Ok(Duration::from_micros(get_fpga_time()?))
-}
-
-pub fn expand_fpga_time(lower: u32) -> HALResult<u64> {
-    hal_call!(HAL_ExpandFPGATime(lower))
+pub fn get_monotonic_duration() -> Duration {
+    Duration::from_micros(get_monotonic_time())
 }
 
 pub fn get_rsl_state() -> HALResult<bool> {

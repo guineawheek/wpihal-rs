@@ -137,7 +137,7 @@ impl PowerDistribution {
     }
 
     pub fn start_stream(&mut self) -> HALResult<()> {
-        if cfg!(not(target_os = "windows")) {
+        if cfg!(feature = "robot-controller") {
             hal_call!(HAL_StartPowerDistributionStream(self.0))
         } else {
             Err(crate::error::HALError(wpihal_sys::HAL_SIM_NOT_SUPPORTED))
@@ -145,7 +145,7 @@ impl PowerDistribution {
     }
 
     pub fn stop_stream(&mut self) -> HALResult<()> {
-        if cfg!(not(target_os = "windows")) {
+        if cfg!(feature = "robot-controller") {
             hal_call!(HAL_StopPowerDistributionStream(self.0))
         } else {
             Err(crate::error::HALError(wpihal_sys::HAL_SIM_NOT_SUPPORTED))
@@ -153,7 +153,7 @@ impl PowerDistribution {
     }
 
     pub fn get_stream(&self) -> HALResult<PowerDistributionStreamData> {
-        if cfg!(not(target_os = "windows")) {
+        if cfg!(feature = "robot-controller") {
             let mut count = 0i32;
             let ptr = hal_call!(HAL_GetPowerDistributionStreamData(self.0, &mut count))?;
             Ok(PowerDistributionStreamData {
@@ -187,7 +187,7 @@ impl PowerDistributionStreamData {
 
 impl Drop for PowerDistributionStreamData {
     fn drop(&mut self) {
-        if cfg!(not(target_os = "windows")) {
+        if cfg!(feature = "robot-controller") {
             unsafe {
                 HAL_FreePowerDistributionStreamData(self.ptr, self.len as i32);
             }

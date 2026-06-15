@@ -1,5 +1,5 @@
-use wpihal_sys::{HAL_ReportUsage, WPI_String};
-use wpiutil::wpistring::WPIString;
+use wpihal_sys::HAL_ReportUsage;
+use wpiutil::wpistring::as_wpistr;
 
 /// Reports usage of a resource of interest.  Repeated calls for the same
 /// resource name replace the previous report.
@@ -10,12 +10,8 @@ use wpiutil::wpistring::WPIString;
 /// * data           arbitrary associated data string
 ///
 /// Returns a mystery handle. Yay!
-pub fn report(resource: &str, data: &str) -> i32 {
-    let resource_str = WPIString::from_str(resource);
-    let data_str = WPIString::from_str(data);
+pub fn report(resource: &str, data: &str) {
     unsafe {
-        let resource_ptr = core::mem::transmute::<_, *const WPI_String>(&resource_str as *const _);
-        let data_ptr = core::mem::transmute::<_, *const WPI_String>(&data_str as *const _);
-        HAL_ReportUsage(resource_ptr, data_ptr)
+        HAL_ReportUsage(as_wpistr!(resource), as_wpistr!(data));
     }
 }

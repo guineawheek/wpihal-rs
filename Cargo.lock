@@ -2185,6 +2185,7 @@ dependencies = [
  "cc",
  "regex",
  "wpilib-nativeutils",
+ "wpiutil-sys",
 ]
 
 [[package]]

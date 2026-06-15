@@ -6,7 +6,7 @@ use std::{
     ffi::{CStr, CString},
 };
 
-use wpihal_sys::{HAL_GetErrorMessage, HAL_SendConsoleLine, HAL_SendError};
+use wpihal_sys::{HAL_GetErrorMessage, HAL_SendConsoleLine, HAL_SendError, HAL_SetPrintErrorImpl};
 
 /// Sends a warning to the driver station.
 pub fn send_warning(code: i32, details: &CStr) -> HALResult<()> {
@@ -19,8 +19,39 @@ pub fn send_error(code: i32, details: &CStr) -> HALResult<()> {
     let v = unsafe { HAL_SendError(1, code, 0, details.as_ptr(), c"".as_ptr(), c"".as_ptr(), 1) };
     if v != 0 { Err(HALError(v)) } else { Ok(()) }
 }
-// We don't bother with HAL_SetPrintErrorImpl because frankly it's kinda nuts.
 
+/// Sets the print error implementation to a given function pointer.
+///
+/// This adds in a trampoline function that converts the arguments into a `str` but if you dislike the extra atomic this adds just use the raw `-sys` export.
+///
+/// # Safety
+/// Be careful.
+pub unsafe fn set_print_error_impl(print_fn: Option<fn(&str)>) {
+    // yes this is dangling but every use of this atomic since will set this to a real value.
+    static PRINT_FN: core::sync::atomic::AtomicPtr<usize> =
+        core::sync::atomic::AtomicPtr::new(core::ptr::null_mut());
+    unsafe extern "C" fn _wpihal_rs_print_error_trampoline(
+        ptr: *const core::ffi::c_char,
+        len: usize,
+    ) {
+        unsafe {
+            let fn_ptr: fn(&str) =
+                core::mem::transmute(PRINT_FN.load(core::sync::atomic::Ordering::Relaxed));
+            fn_ptr(str::from_utf8_unchecked(core::slice::from_raw_parts(
+                ptr as _, len,
+            )));
+        };
+    }
+
+    unsafe {
+        HAL_SetPrintErrorImpl(print_fn.map(|ptr| {
+            PRINT_FN.store(ptr as *mut usize, core::sync::atomic::Ordering::Relaxed);
+            _wpihal_rs_print_error_trampoline as _
+        }));
+    }
+}
+
+/// Send a line to the driver station console.
 pub fn send_console_line(line: &str) -> HALResult<()> {
     let c_line = CString::new(line).unwrap();
     let v = unsafe { HAL_SendConsoleLine(c_line.as_ptr()) };
@@ -31,7 +62,7 @@ pub fn send_console_line(line: &str) -> HALResult<()> {
 /// These are nullable.
 ///
 /// These are used throughout the HAL to provide helpful messages on double allocation.
-pub fn allocation_location_ptr(allocation_location: Option<&CStr>) -> *const std::ffi::c_char {
+pub fn allocation_location_ptr(allocation_location: Option<&CStr>) -> *const core::ffi::c_char {
     match allocation_location {
         Some(s) => s.as_ptr(),
         None => core::ptr::null(),

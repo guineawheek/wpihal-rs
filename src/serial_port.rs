@@ -1,7 +1,6 @@
 /*
 
-this doesn't use VISA to query the usb serial ports
-but honestly if you're using rust, just use a 3rd party crate
+In practice you probably want to use /dev/serial/by-id or whatever
 
 */
 
