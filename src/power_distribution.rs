@@ -11,11 +11,9 @@ use wpihal_sys::{
     HAL_GetPowerDistributionTotalCurrent, HAL_GetPowerDistributionTotalEnergy,
     HAL_GetPowerDistributionTotalPower, HAL_GetPowerDistributionType,
     HAL_GetPowerDistributionVersion, HAL_GetPowerDistributionVoltage,
-    HAL_InitializePowerDistribution, HAL_PowerDistributionChannelData, HAL_PowerDistributionFaults,
-    HAL_PowerDistributionHandle, HAL_PowerDistributionStickyFaults, HAL_PowerDistributionType,
-    HAL_PowerDistributionVersion, HAL_ResetPowerDistributionTotalEnergy,
-    HAL_SetPowerDistributionSwitchableChannel, HAL_StartPowerDistributionStream,
-    HAL_StopPowerDistributionStream,
+    HAL_InitializePowerDistribution, HAL_PowerDistributionChannelData, HAL_PowerDistributionHandle,
+    HAL_ResetPowerDistributionTotalEnergy, HAL_SetPowerDistributionSwitchableChannel,
+    HAL_StartPowerDistributionStream, HAL_StopPowerDistributionStream,
 };
 
 use crate::{
@@ -23,11 +21,11 @@ use crate::{
     hal_bool, hal_call,
 };
 
-pub type PowerDistributionType = HAL_PowerDistributionType;
-pub type PowerDistributionVersion = HAL_PowerDistributionVersion;
-pub type PowerDistributionFaults = HAL_PowerDistributionFaults;
-pub type PowerDistributionStickyFaults = HAL_PowerDistributionStickyFaults;
-pub type PowerDistributionChannelData = HAL_PowerDistributionChannelData;
+pub use wpihal_sys::HAL_PowerDistributionChannelData as PowerDistributionChannelData;
+pub use wpihal_sys::HAL_PowerDistributionFaults as PowerDistributionFaults;
+pub use wpihal_sys::HAL_PowerDistributionStickyFaults as PowerDistributionStickyFaults;
+pub use wpihal_sys::HAL_PowerDistributionType as PowerDistributionType;
+pub use wpihal_sys::HAL_PowerDistributionVersion as PowerDistributionVersion;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct PowerDistribution(HAL_PowerDistributionHandle);

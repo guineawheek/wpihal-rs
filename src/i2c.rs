@@ -1,10 +1,8 @@
-use wpihal_sys::{
-    HAL_CloseI2C, HAL_I2CPort, HAL_InitializeI2C, HAL_ReadI2C, HAL_TransactionI2C, HAL_WriteI2C,
-};
+use wpihal_sys::{HAL_CloseI2C, HAL_InitializeI2C, HAL_ReadI2C, HAL_TransactionI2C, HAL_WriteI2C};
 
 use crate::{error::HALResult, hal_call};
 
-pub type I2CPort = HAL_I2CPort;
+pub use wpihal_sys::HAL_I2CPort as I2CPort;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct I2C(I2CPort);

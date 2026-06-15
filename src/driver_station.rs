@@ -1,12 +1,9 @@
 use wpihal_sys::{
-    HAL_AllianceStationID, HAL_ControlWord, HAL_GameData, HAL_GetAllJoystickData,
-    HAL_GetAllianceStation, HAL_GetControlWord, HAL_GetGameData, HAL_GetJoystickAxes,
-    HAL_GetJoystickButtons, HAL_GetJoystickDescriptor, HAL_GetJoystickGamepadType,
-    HAL_GetJoystickIsGamepad, HAL_GetJoystickName, HAL_GetJoystickPOVs,
+    HAL_GameData, HAL_GetAllJoystickData, HAL_GetAllianceStation, HAL_GetGameData,
+    HAL_GetJoystickAxes, HAL_GetJoystickButtons, HAL_GetJoystickDescriptor,
+    HAL_GetJoystickGamepadType, HAL_GetJoystickIsGamepad, HAL_GetJoystickName, HAL_GetJoystickPOVs,
     HAL_GetJoystickSupportedOutputs, HAL_GetJoystickTouchpads, HAL_GetMatchInfo, HAL_GetMatchTime,
-    HAL_GetOutputsEnabled, HAL_JoystickAxes, HAL_JoystickButtons, HAL_JoystickDescriptor,
-    HAL_JoystickPOVs, HAL_JoystickTouchpads, HAL_MatchInfo, HAL_MatchType,
-    HAL_ObserveUserProgramStarting, HAL_RefreshDSData, HAL_RobotMode, HAL_SetJoystickLeds,
+    HAL_GetOutputsEnabled, HAL_ObserveUserProgramStarting, HAL_RefreshDSData, HAL_SetJoystickLeds,
     HAL_SetJoystickRumble,
 };
 use wpiutil::wpistring::WPIString;
@@ -15,6 +12,15 @@ use crate::{
     error::{HALError, HALResult},
     hal_call, hal_retcall,
 };
+
+pub use wpihal_sys::HAL_AllianceStationID as AllianceStationID;
+pub use wpihal_sys::HAL_JoystickAxes as JoystickAxes;
+pub use wpihal_sys::HAL_JoystickButtons as JoystickButtons;
+pub use wpihal_sys::HAL_JoystickDescriptor as JoystickDescriptor;
+pub use wpihal_sys::HAL_JoystickPOVs as JoystickPOVs;
+pub use wpihal_sys::HAL_JoystickTouchpads as JoystickTouchpads;
+pub use wpihal_sys::HAL_MatchInfo as MatchInfo;
+pub use wpihal_sys::HAL_MatchType as MatchType;
 
 pub fn get_alliance_station() -> HALResult<AllianceStationID> {
     hal_call!(HAL_GetAllianceStation())
@@ -202,12 +208,3 @@ pub fn observe_user_program_starting() {
         HAL_ObserveUserProgramStarting();
     }
 }
-
-pub type AllianceStationID = HAL_AllianceStationID;
-pub type MatchType = HAL_MatchType;
-pub type JoystickAxes = HAL_JoystickAxes;
-pub type JoystickPOVs = HAL_JoystickPOVs;
-pub type JoystickButtons = HAL_JoystickButtons;
-pub type JoystickDescriptor = HAL_JoystickDescriptor;
-pub type JoystickTouchpads = HAL_JoystickTouchpads;
-pub type MatchInfo = HAL_MatchInfo;

@@ -6,11 +6,10 @@ use wpihal_sys::{
     HAL_GetREVPHCompressor, HAL_GetREVPHCompressorCurrent, HAL_GetREVPHFaults,
     HAL_GetREVPHPressureSwitch, HAL_GetREVPHSolenoidCurrent, HAL_GetREVPHSolenoidDisabledList,
     HAL_GetREVPHSolenoidVoltage, HAL_GetREVPHSolenoids, HAL_GetREVPHStickyFaults,
-    HAL_GetREVPHVersion, HAL_GetREVPHVoltage, HAL_InitializeREVPH, HAL_REVPHCompressorConfig,
-    HAL_REVPHFaults, HAL_REVPHHandle, HAL_REVPHStickyFaults, HAL_REVPHVersion,
-    HAL_SetREVPHClosedLoopControlAnalog, HAL_SetREVPHClosedLoopControlDigital,
-    HAL_SetREVPHClosedLoopControlDisabled, HAL_SetREVPHClosedLoopControlHybrid,
-    HAL_SetREVPHCompressorConfig, HAL_SetREVPHSolenoids,
+    HAL_GetREVPHVersion, HAL_GetREVPHVoltage, HAL_InitializeREVPH, HAL_REVPHFaults,
+    HAL_REVPHHandle, HAL_REVPHStickyFaults, HAL_REVPHVersion, HAL_SetREVPHClosedLoopControlAnalog,
+    HAL_SetREVPHClosedLoopControlDigital, HAL_SetREVPHClosedLoopControlDisabled,
+    HAL_SetREVPHClosedLoopControlHybrid, HAL_SetREVPHCompressorConfig, HAL_SetREVPHSolenoids,
 };
 
 use crate::{
@@ -18,10 +17,10 @@ use crate::{
     hal_bool, hal_call,
 };
 
-pub type REVPHCompressorConfig = HAL_REVPHCompressorConfig;
-pub type REVPHVersion = HAL_REVPHVersion;
-pub type REVPHFaults = HAL_REVPHFaults;
-pub type REVPHStickyFaults = HAL_REVPHStickyFaults;
+pub use wpihal_sys::HAL_REVPHCompressorConfig as REVPHCompressorConfig;
+pub use wpihal_sys::HAL_REVPHFaults as REVPHFaults;
+pub use wpihal_sys::HAL_REVPHStickyFaults as REVPHStickyFaults;
+pub use wpihal_sys::HAL_REVPHVersion as REVPHVersion;
 
 pub enum ClosedLoopControlMode {
     Disabled,

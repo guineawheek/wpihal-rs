@@ -3,8 +3,7 @@ use wpihal_sys::{
     HAL_CAN_IS_FRAME_REMOTE, HAL_CAN_OpenStreamSession, HAL_CAN_ReadStreamSession,
     HAL_CAN_ReceiveMessage, HAL_CAN_SEND_PERIOD_NO_REPEAT, HAL_CAN_SEND_PERIOD_STOP_REPEATING,
     HAL_CAN_SendMessage, HAL_CAN_TIMEOUT, HAL_CANMessage, HAL_CANReceiveMessage,
-    HAL_CANStreamMessage, HAL_WARN_CANSessionMux_SocketBufferFull,
-    HAL_WARN_CANSessionMux_TxQueueFull,
+    HAL_WARN_CANSessionMux_SocketBufferFull, HAL_WARN_CANSessionMux_TxQueueFull,
 };
 
 use crate::{
@@ -12,7 +11,7 @@ use crate::{
     hal_call,
 };
 
-pub type CANStreamMessage = HAL_CANStreamMessage;
+pub use wpihal_sys::HAL_CANStreamMessage as CANStreamMessage;
 /// Send the message but do not repeat it periodically.
 pub const SEND_PERIOD_NO_REPEAT: i32 = HAL_CAN_SEND_PERIOD_NO_REPEAT as i32;
 /// Stop repeating the message.

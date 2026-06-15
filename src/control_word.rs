@@ -7,7 +7,7 @@ use wpihal_sys::{
 
 use crate::{error::HALResult, hal_retcall};
 
-pub type RobotMode = HAL_RobotMode;
+pub use wpihal_sys::HAL_RobotMode as RobotMode;
 
 const fn gate(cond: bool, value: u64) -> u64 {
     if cond { value } else { 0 }

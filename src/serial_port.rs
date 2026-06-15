@@ -9,15 +9,15 @@ use std::ffi::{CStr, c_char};
 use wpihal_sys::{
     HAL_CloseSerial, HAL_DisableSerialTermination, HAL_EnableSerialTermination, HAL_FlushSerial,
     HAL_GetSerialBytesReceived, HAL_GetSerialFD, HAL_InitializeSerialPort,
-    HAL_InitializeSerialPortDirect, HAL_ReadSerial, HAL_SerialPort, HAL_SerialPortHandle,
-    HAL_SetSerialBaudRate, HAL_SetSerialDataBits, HAL_SetSerialFlowControl, HAL_SetSerialParity,
+    HAL_InitializeSerialPortDirect, HAL_ReadSerial, HAL_SerialPortHandle, HAL_SetSerialBaudRate,
+    HAL_SetSerialDataBits, HAL_SetSerialFlowControl, HAL_SetSerialParity,
     HAL_SetSerialReadBufferSize, HAL_SetSerialStopBits, HAL_SetSerialTimeout,
     HAL_SetSerialWriteBufferSize, HAL_SetSerialWriteMode, HAL_WriteSerial,
 };
 
 use crate::{error::HALResult, hal_call};
 
-pub type SerialPortIndex = HAL_SerialPort;
+pub use wpihal_sys::HAL_SerialPort as SerialPortIndex;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]

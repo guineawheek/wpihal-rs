@@ -31,8 +31,6 @@ pub mod control_word;
 pub mod counter;
 /// ctre pcm
 pub mod ctre_pcm;
-/// Dashboard opmode.
-pub mod dashboard_op_mode;
 /// digital i/o
 pub mod dio;
 /// driver station data
@@ -127,6 +125,7 @@ macro_rules! hal_call {
 macro_rules! hal_retcall {
     ($function:ident($($prev_arg:expr),* $(,)?) -> $out_ty:ty) => {{
         let mut out = core::mem::MaybeUninit::<$out_ty>::zeroed();
+        #[allow(unused_unsafe)]
         let status = unsafe {
             $function(
                 $($prev_arg,)*
@@ -134,6 +133,7 @@ macro_rules! hal_retcall {
             )
         };
         if status == 0 {
+            #[allow(unused_unsafe)]
             unsafe {
                 Ok(out.assume_init())
             }

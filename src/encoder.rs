@@ -1,17 +1,17 @@
 use wpihal_sys::{
-    HAL_EncoderEncodingType, HAL_EncoderHandle, HAL_EncoderIndexingType, HAL_FreeEncoder,
-    HAL_GetEncoder, HAL_GetEncoderDecodingScaleFactor, HAL_GetEncoderDirection,
-    HAL_GetEncoderDistance, HAL_GetEncoderDistancePerPulse, HAL_GetEncoderEncodingScale,
-    HAL_GetEncoderEncodingType, HAL_GetEncoderFPGAIndex, HAL_GetEncoderPeriod, HAL_GetEncoderRate,
-    HAL_GetEncoderRaw, HAL_GetEncoderStopped, HAL_InitializeEncoder, HAL_ResetEncoder,
-    HAL_SetEncoderDistancePerPulse, HAL_SetEncoderMaxPeriod, HAL_SetEncoderMinRate,
-    HAL_SetEncoderReverseDirection, HAL_SetEncoderSimDevice,
+    HAL_EncoderHandle, HAL_FreeEncoder, HAL_GetEncoder, HAL_GetEncoderDecodingScaleFactor,
+    HAL_GetEncoderDirection, HAL_GetEncoderDistance, HAL_GetEncoderDistancePerPulse,
+    HAL_GetEncoderEncodingScale, HAL_GetEncoderEncodingType, HAL_GetEncoderFPGAIndex,
+    HAL_GetEncoderPeriod, HAL_GetEncoderRate, HAL_GetEncoderRaw, HAL_GetEncoderStopped,
+    HAL_InitializeEncoder, HAL_ResetEncoder, HAL_SetEncoderDistancePerPulse,
+    HAL_SetEncoderMaxPeriod, HAL_SetEncoderMinRate, HAL_SetEncoderReverseDirection,
+    HAL_SetEncoderSimDevice,
 };
 
 use crate::{error::HALResult, hal_bool, hal_call, sim_device::SimDevice};
 
-pub type IndexingType = HAL_EncoderIndexingType;
-pub type EncodingType = HAL_EncoderEncodingType;
+pub use wpihal_sys::HAL_EncoderEncodingType as EncodingType;
+pub use wpihal_sys::HAL_EncoderIndexingType as IndexingType;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Encoder {

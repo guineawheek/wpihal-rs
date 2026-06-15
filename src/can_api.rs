@@ -1,15 +1,15 @@
 use wpihal_sys::{
-    HAL_CANDeviceType, HAL_CANFlags, HAL_CANHandle, HAL_CANManufacturer, HAL_CANMessage,
-    HAL_CANReceiveMessage, HAL_CleanCAN, HAL_InitializeCAN, HAL_ReadCANPacketLatest,
-    HAL_ReadCANPacketNew, HAL_ReadCANPacketTimeout, HAL_StopCANPacketRepeating, HAL_WriteCANPacket,
-    HAL_WriteCANPacketRepeating, HAL_WriteCANRTRFrame,
+    HAL_CANFlags, HAL_CANMessage, HAL_CANReceiveMessage, HAL_CleanCAN, HAL_InitializeCAN,
+    HAL_ReadCANPacketLatest, HAL_ReadCANPacketNew, HAL_ReadCANPacketTimeout,
+    HAL_StopCANPacketRepeating, HAL_WriteCANPacket, HAL_WriteCANPacketRepeating,
+    HAL_WriteCANRTRFrame,
 };
 
 use crate::{error::HALResult, hal_call};
 
-pub type CANManufacturer = HAL_CANManufacturer;
-pub type CANDeviceType = HAL_CANDeviceType;
-pub type CANHandle = HAL_CANHandle;
+pub use wpihal_sys::HAL_CANDeviceType as CANDeviceType;
+pub use wpihal_sys::HAL_CANHandle as CANHandle;
+pub use wpihal_sys::HAL_CANManufacturer as CANManufacturer;
 
 /// Used in conjunction with the high-level CAN API.
 /// Notably, this only includes the 10-bit API id.
