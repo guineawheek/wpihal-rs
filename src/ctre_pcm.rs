@@ -18,9 +18,9 @@ use crate::{
     hal_bool, hal_call,
 };
 
-pub struct CTREPCM(HAL_CTREPCMHandle);
+pub struct CtrePcm(HAL_CTREPCMHandle);
 
-impl CTREPCM {
+impl CtrePcm {
     pub fn initialize(
         bus_id: i32,
         module: i32,
@@ -114,7 +114,7 @@ impl CTREPCM {
     }
 }
 
-impl Drop for CTREPCM {
+impl Drop for CtrePcm {
     fn drop(&mut self) {
         unsafe {
             HAL_FreeCTREPCM(self.0);

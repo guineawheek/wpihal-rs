@@ -38,12 +38,12 @@ impl ControlWord {
 
     /// Gets the current control word.
     pub fn get() -> HALResult<Self> {
-        hal_retcall!(HAL_GetControlWord() -> HAL_ControlWord).map(|v| Self(v.value as _))
+        hal_retcall!(HAL_GetControlWord() -> HAL_ControlWord).map(Self::from)
     }
 
     /// Gets the current uncached control word.
     pub fn get_uncached() -> HALResult<Self> {
-        hal_retcall!(HAL_GetUncachedControlWord() -> HAL_ControlWord).map(|v| Self(v.value as _))
+        hal_retcall!(HAL_GetUncachedControlWord() -> HAL_ControlWord).map(Self::from)
     }
 
     pub const fn op_mode_hash(&self) -> i64 {
@@ -82,5 +82,18 @@ impl ControlWord {
 
     pub const fn ds_attached(&self) -> bool {
         self.0 & HAL_CONTROLWORD_DS_ATTACHED_MASK != 0
+    }
+}
+
+impl From<HAL_ControlWord> for ControlWord {
+    fn from(value: HAL_ControlWord) -> Self {
+        Self(value.value as _)
+    }
+}
+impl From<ControlWord> for HAL_ControlWord {
+    fn from(value: ControlWord) -> Self {
+        Self {
+            value: value.0 as _,
+        }
     }
 }

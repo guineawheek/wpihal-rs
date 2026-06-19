@@ -1,19 +1,15 @@
-use crate::halsim::{CallbackHandle, ConstBufferCallback, NotifyCallback};
+use crate::halsim::callbacks::{CallbackHandle, ConstBufferCallback};
 
-use super::halsim_value;
-
-halsim_value!(AddressableLEDInitialized::<bool>(i32));
-halsim_value!(AddressableLEDStart::<i32>(i32));
-halsim_value!(AddressableLEDLength::<i32>(i32));
+use super::halsim_data;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AddressableLEDData;
-impl AddressableLEDData {
+pub struct AddressableLEDBuffer;
+impl AddressableLEDBuffer {
     pub fn register_callback<C: ConstBufferCallback>(&self, callback: C) -> CallbackHandle<C> {
         crate::halsim::callbacks::register_callback!(
             HALSIM_RegisterAddressableLEDDataCallback,
             HALSIM_CancelAddressableLEDDataCallback,
-            crate::halsim::const_buffer_callback_trampoline::<C>,
+            crate::halsim::callbacks::const_buffer_callback_trampoline::<C>,
             callback
         )
     }
@@ -39,21 +35,8 @@ impl AddressableLEDData {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AddressableLED(pub i32);
-
-impl AddressableLED {
-    pub fn reset(&self) {
-        unsafe {
-            wpihal_sys::HALSIM_ResetAddressableLEDData(self.0);
-        }
-    }
-
-    pub const fn initialized(&self) -> AddressableLEDInitialized {
-        AddressableLEDInitialized(self.0)
-    }
-
-    pub const fn length(&self) -> AddressableLEDLength {
-        AddressableLEDLength(self.0)
-    }
-}
+halsim_data!(AddressableLED {
+    initialized: bool,
+    start: i32,
+    length: i32
+});

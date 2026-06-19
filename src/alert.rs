@@ -45,6 +45,18 @@ impl Alert {
         // SAFETY: wpihal allocates the string so we are responsible for its deallocation
         hal_call!(HAL_GetAlertText(self.0, &mut out)).map(|()| unsafe { WPIString::from_raw(out) })
     }
+
+    pub const fn raw_handle(&self) -> HAL_AlertHandle {
+        self.0
+    }
+
+    ///
+    /// # Safety
+    ///
+    /// Don't drop the `handle` independently.
+    pub unsafe fn from_handle(handle: HAL_AlertHandle) -> Self {
+        Self(handle)
+    }
 }
 
 impl Drop for Alert {

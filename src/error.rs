@@ -86,6 +86,7 @@ pub fn allocation_location_ptr(allocation_location: Option<&CStr>) -> *const cor
 
 /// represents a hal error returned from wpilib
 #[derive(Copy, Clone)]
+#[repr(transparent)]
 pub struct HALError(pub i32);
 
 impl HALError {
@@ -130,6 +131,15 @@ impl std::error::Error for HALError {
 impl From<i32> for HALError {
     fn from(code: i32) -> Self {
         HALError(code)
+    }
+}
+
+/// create status code
+#[must_use]
+pub const fn result_as_i32(result: HALResult<()>) -> i32 {
+    match result {
+        Ok(()) => 0,
+        Err(e) => e.0,
     }
 }
 
