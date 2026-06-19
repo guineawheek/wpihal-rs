@@ -41,6 +41,8 @@ pub mod duty_cycle;
 pub mod encoder;
 /// HAL extensions
 pub mod extensions;
+/// halsim hooks
+pub mod halsim;
 /// I2C transactions
 pub mod i2c;
 /// Integrated IMU
@@ -250,8 +252,7 @@ pub fn sim_periodic_after() {
     }
 }
 
-#[allow(non_snake_case)]
-unsafe extern "C" fn HAL_rust_wpihal_linkage_trampoline(param: *mut c_void) {
+unsafe extern "C" fn param_as_fn_trampoline(param: *mut c_void) {
     unsafe {
         let f: fn() = core::mem::transmute(param);
         f()

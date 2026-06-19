@@ -5,7 +5,7 @@ use wpihal_sys::{
     HAL_RegisterExtensionListener, HAL_SetShowExtensionsNotFoundMessages,
 };
 
-use crate::HAL_rust_wpihal_linkage_trampoline;
+use crate::param_as_fn_trampoline;
 
 pub fn load_one_extension(library: &CStr) -> i32 {
     unsafe { HAL_LoadOneExtension(library.as_ptr()) }
@@ -26,19 +26,11 @@ pub fn register_extension(name: &CStr, data: *mut c_void) {
 /// if you really care call HAL_RegisterExtension directly.
 pub fn register_extension_listener(f: fn(&CStr, *mut c_void)) {
     unsafe {
-        HAL_RegisterExtensionListener(
-            f as *mut c_void,
-            Some(HAL_rust_wpihal_extension_callback_wrapper),
-        );
+        HAL_RegisterExtensionListener(f as *mut c_void, Some(extension_trampoline));
     }
 }
 
-#[allow(non_snake_case)]
-unsafe extern "C" fn HAL_rust_wpihal_extension_callback_wrapper(
-    f: *mut c_void,
-    name: *const c_char,
-    data: *mut c_void,
-) {
+unsafe extern "C" fn extension_trampoline(f: *mut c_void, name: *const c_char, data: *mut c_void) {
     unsafe {
         let f: fn(&CStr, *mut c_void) = core::mem::transmute(f);
         f(CStr::from_ptr(name), data);
@@ -53,6 +45,6 @@ pub fn set_show_extensions_not_found_messages(show_message: bool) {
 
 pub fn on_shutdown(f: fn()) {
     unsafe {
-        HAL_OnShutdown(f as *mut c_void, Some(HAL_rust_wpihal_linkage_trampoline));
+        HAL_OnShutdown(f as *mut c_void, Some(param_as_fn_trampoline));
     }
 }
