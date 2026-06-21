@@ -38,9 +38,14 @@ impl WPIString {
     /// Allocates a new [`WPIString`] as a copy of an existing string.
     pub fn new(s: &str) -> Self {
         let mut wpi_str = RawWPIString::default();
+        // SAFETY: trust
         unsafe {
-            WPI_AllocateString(&mut wpi_str, s.as_bytes().len());
-        }
+            let s = s.as_bytes();
+            let buffer = WPI_AllocateString(&mut wpi_str, s.len());
+            let buffer = core::slice::from_raw_parts_mut(buffer.cast(), s.len());
+            buffer.copy_from_slice(s);
+        };
+
         Self(wpi_str)
     }
 
@@ -54,18 +59,22 @@ impl WPIString {
         Self(wpi_str)
     }
 
+    /// Calls the closure with an empty [`RawWPIString`] for an FFI function to fill.
+    ///
+    /// # Safety
+    /// You must ensure that the passed-in closure initializes the value.
+    pub unsafe fn from_raw_ctx(f: impl FnOnce(&mut RawWPIString)) -> Self {
+        let mut dest = RawWPIString::default();
+        f(&mut dest);
+        Self(dest)
+    }
+
     /// View of the underlying utf8 string as a [`str`].
     pub fn as_str<'a>(&'a self) -> &'a str {
         // SAFETY: We generally assume the underlying buffer is UTF-8.
         // If it's not, then that's probably a bug.
-        //
-        // No Thad, UTF-16LE is in fact a mental illness.
-        unsafe {
-            str::from_utf8_unchecked(core::slice::from_raw_parts(
-                self.0.str_ as *const u8,
-                self.0.len,
-            ))
-        }
+        // ...as much as Windows loves UTF16-LE.
+        unsafe { self.0.as_str() }
     }
 }
 
@@ -97,6 +106,13 @@ impl Display for WPIString {
     }
 }
 
+impl From<WPIString> for RawWPIString {
+    fn from(value: WPIString) -> Self {
+        // SAFETY: Leaking Memory Is Safe
+        unsafe { core::mem::transmute(value) }
+    }
+}
+
 /// A "read-only" [`RawWPIString`].
 ///
 /// These can be constructed with the [`From`] impls from [`str`] and [`CStr`], but are otherwise
@@ -118,6 +134,12 @@ impl WPIStringRef<'_> {
             inner: wpi_str,
             _borrow: PhantomData,
         }
+    }
+
+    /// # Safety
+    /// You are responsible for ensuring lifetimes work appropriately after this.
+    pub const unsafe fn as_handle(self) -> RawWPIString {
+        self.inner
     }
 }
 
@@ -148,12 +170,7 @@ impl<'a> From<&'a str> for WPIStringRef<'a> {
 impl Deref for WPIStringRef<'_> {
     type Target = str;
     fn deref(&self) -> &Self::Target {
-        unsafe {
-            str::from_utf8_unchecked(core::slice::from_raw_parts(
-                self.inner.str_ as *const u8,
-                self.inner.len,
-            ))
-        }
+        unsafe { self.inner.as_str() }
     }
 }
 

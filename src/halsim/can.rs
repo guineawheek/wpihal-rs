@@ -1,5 +1,3 @@
-//use wpihal_sys::{HAL_CANMessage, HAL_CAN_SendMessageCallback, HAL_CAN_ReceiveMessageCallback, HAL_CAN_OpenStreamSessionCallback, HAL_CAN_CloseStreamSessionCallback, HAL_CAN_ReadStreamSessionCallback, HAL_CAN_GetCANStatusCallback};
-
 use wpihal_sys::{
     HAL_CANMessage, HAL_CANReceiveMessage, HAL_CANStreamHandle, HAL_CANStreamMessage,
 };
@@ -22,7 +20,7 @@ macro_rules! can_register_callback {
                     [<HALSIM_RegisterCan $name Callback>],
                     [<HALSIM_CancelCan $name Callback>],
                     [<can_ $name:snake _callback_trampoline>]::<C>,
-                    callback
+                    callback,
                 )
             }
         }
@@ -57,7 +55,6 @@ callback_trait!(
         ));
     }}
 );
-can_register_callback!(SendMessage);
 
 callback_trait!(
     CanReceiveMessageCallback(
@@ -94,7 +91,6 @@ callback_trait!(
         }
     }}
 );
-can_register_callback!(ReceiveMessage);
 
 callback_trait!(
     CanOpenStreamCallback(
@@ -134,13 +130,11 @@ callback_trait!(
         }
     }}
 );
-can_register_callback!(OpenStream);
 
 callback_trait!(
     CanCloseStreamCallback(handle: HAL_CANStreamHandle),
     |callback, name, handle: HAL_CANStreamHandle| { callback.callback(name, handle) }
 );
-can_register_callback!(CloseStream);
 callback_trait!(
     CanReadStreamCallback(
         handle: HAL_CANStreamHandle,
@@ -180,7 +174,6 @@ callback_trait!(
         }
     }}
 );
-can_register_callback!(ReadStream);
 
 callback_trait!(
     CanGetCANStatusCallback(bus_id: i32) -> Result<crate::can::CANStatus, HALError>,
@@ -211,4 +204,21 @@ callback_trait!(
         }
     }}
 );
+
+// Unlike most other callbacks, these callbacks do control how wpilib
+// accesses things like CAN in simulation.
+// this lets you hook wpilib's CAN backend to Whatever You Want;
+// which is mildly useful in the roborio era but perhaps less useful in a socketcan world.
+
+// register_send_message_callback
+can_register_callback!(SendMessage);
+// register_receive_message_callback
+can_register_callback!(ReceiveMessage);
+// register_open_stream_callback
+can_register_callback!(OpenStream);
+// register_close_stream_callback
+can_register_callback!(CloseStream);
+// register_read_stream_callback
+can_register_callback!(ReadStream);
+// register_get_can_status_callback
 can_register_callback!(GetCANStatus, get_can_status);

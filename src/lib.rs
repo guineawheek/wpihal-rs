@@ -74,14 +74,6 @@ pub mod usage_reporting;
 /// HALValue
 pub mod value;
 
-/*
-dma
-errors
-extensions
-frcusagereporting
-halbase
-*/
-
 /// Error handling
 pub mod error;
 
@@ -164,19 +156,11 @@ pub fn get_last_error() -> (HALError, String) {
 }
 
 pub fn get_serial_number() -> WPIString {
-    let mut s: wpiutil::wpistring::RawWPIString = Default::default();
-    unsafe {
-        HAL_GetSerialNumber(&mut s);
-        WPIString::from_raw(s)
-    }
+    unsafe { WPIString::from_raw_ctx(|s| HAL_GetSerialNumber(s)) }
 }
 
 pub fn get_comments() -> WPIString {
-    let mut s: wpiutil::wpistring::RawWPIString = Default::default();
-    unsafe {
-        HAL_GetComments(&mut s);
-        WPIString::from_raw(s)
-    }
+    unsafe { WPIString::from_raw_ctx(|s| HAL_GetComments(s)) }
 }
 
 pub fn get_team_number() -> i32 {

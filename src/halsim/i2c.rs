@@ -9,21 +9,12 @@ halsim_data!(I2C { initialized: bool });
 
 impl I2C {
     pub fn register_read_callback<C: BufferCallback>(&self, callback: C) -> CallbackHandle<C> {
-        let callback = Box::new(callback);
-        let uid = unsafe {
-            wpihal_sys::HALSIM_RegisterI2CReadCallback(
-                self.0,
-                Some(buffer_callback_trampoline::<C>),
-                core::ptr::NonNull::from_ref(callback.as_ref())
-                    .cast::<core::ffi::c_void>()
-                    .as_ptr(),
-            )
-        };
-        CallbackHandle::new_indexed(
-            self.0,
-            uid,
+        crate::halsim::callbacks::register_callback!(
+            HALSIM_RegisterI2CReadCallback,
+            HALSIM_CancelI2CReadCallback,
+            buffer_callback_trampoline::<C>,
             callback,
-            wpihal_sys::HALSIM_CancelI2CReadCallback,
+            index: self.0,
         )
     }
 
@@ -31,21 +22,12 @@ impl I2C {
         &self,
         callback: C,
     ) -> CallbackHandle<C> {
-        let callback = Box::new(callback);
-        let uid = unsafe {
-            wpihal_sys::HALSIM_RegisterI2CWriteCallback(
-                self.0,
-                Some(const_buffer_callback_trampoline::<C>),
-                core::ptr::NonNull::from_ref(callback.as_ref())
-                    .cast::<core::ffi::c_void>()
-                    .as_ptr(),
-            )
-        };
-        CallbackHandle::new_indexed(
-            self.0,
-            uid,
+        crate::halsim::callbacks::register_callback!(
+            HALSIM_RegisterI2CWriteCallback,
+            HALSIM_CancelI2CWriteCallback,
+            const_buffer_callback_trampoline::<C>,
             callback,
-            wpihal_sys::HALSIM_CancelI2CWriteCallback,
+            index: self.0,
         )
     }
 }

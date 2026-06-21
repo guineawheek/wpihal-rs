@@ -13,7 +13,7 @@ use crate::{
     hal_call, hal_retcall,
 };
 
-pub use wpihal_sys::HAL_AllianceStationID as AllianceStationID;
+pub use wpihal_sys::HAL_AllianceStationID as AllianceStationId;
 pub use wpihal_sys::HAL_JoystickAxes as JoystickAxes;
 pub use wpihal_sys::HAL_JoystickButtons as JoystickButtons;
 pub use wpihal_sys::HAL_JoystickDescriptor as JoystickDescriptor;
@@ -21,9 +21,33 @@ pub use wpihal_sys::HAL_JoystickPOVs as JoystickPOVs;
 pub use wpihal_sys::HAL_JoystickTouchpads as JoystickTouchpads;
 pub use wpihal_sys::HAL_MatchInfo as MatchInfo;
 pub use wpihal_sys::HAL_MatchType as MatchType;
+pub use wpihal_sys::HAL_RobotMode as RobotMode;
 
-pub fn get_alliance_station() -> HALResult<AllianceStationID> {
+pub fn get_alliance_station() -> HALResult<AllianceStationId> {
     hal_call!(HAL_GetAllianceStation())
+}
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+pub struct JoystickRumble {
+    pub left_rumble: u16,
+    pub right_rumble: u16,
+    pub left_trigger_rumble: u16,
+    pub right_trigger_rumble: u16,
+}
+
+impl JoystickRumble {
+    pub const fn new(
+        left_rumble: i32,
+        right_rumble: i32,
+        left_trigger_rumble: i32,
+        right_trigger_rumble: i32,
+    ) -> Self {
+        Self {
+            left_rumble: left_rumble as u16,
+            right_rumble: right_rumble as u16,
+            left_trigger_rumble: left_trigger_rumble as u16,
+            right_trigger_rumble: right_trigger_rumble as u16,
+        }
+    }
 }
 
 /// Holding struct for all joystick data.
@@ -90,26 +114,16 @@ impl Joystick {
 
     /// Gets the joystick name.
     pub fn name(&self) -> WPIString {
-        let mut name: wpiutil::wpistring::RawWPIString = Default::default();
-        unsafe {
-            HAL_GetJoystickName(&mut name, self.0);
-            WPIString::from_raw(name)
-        }
+        unsafe { WPIString::from_raw_ctx(|name| HAL_GetJoystickName(name, self.0)) }
     }
 
-    pub fn set_joystick_outputs(
-        &self,
-        left_rumble: u16,
-        right_rumble: u16,
-        left_trigger_rumble: u16,
-        right_trigger_rumble: u16,
-    ) -> HALResult<()> {
+    pub fn set_rumble(&self, rumbles: &JoystickRumble) -> HALResult<()> {
         hal_retcall!(HAL_SetJoystickRumble(
             self.0,
-            left_rumble as i32,
-            right_rumble as i32,
-            left_trigger_rumble as i32,
-            right_trigger_rumble as i32
+            rumbles.left_rumble as i32,
+            rumbles.right_rumble as i32,
+            rumbles.left_trigger_rumble as i32,
+            rumbles.right_trigger_rumble as i32
         ))
     }
 
@@ -120,15 +134,21 @@ impl Joystick {
 
 const GAME_DATA_LEN: usize = 9;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct GameData([u8; GAME_DATA_LEN]);
 impl GameData {
     /// # Safety
     /// You gotta be sure that `data.gameData` is utf8.
-    pub const unsafe fn new(data: HAL_GameData) -> Self {
-        unsafe {
-            // this will freak out if the sizes are not equal anyway.
-            Self(core::mem::transmute(data.gameData))
-        }
+    pub unsafe fn new(data: HAL_GameData) -> Self {
+        Self(data.gameData.map(|v| v as _))
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        let data = &s.as_bytes()[..s.floor_char_boundary(s.len().min(GAME_DATA_LEN))];
+        let mut dest = [0_u8; _];
+        dest[..data.len()].copy_from_slice(data);
+
+        Self(dest)
     }
 
     /// inner
@@ -152,6 +172,14 @@ impl GameData {
     pub fn get() -> HALResult<Self> {
         // SAFETY: i trust wpilib to not give me anything not utf8
         unsafe { hal_retcall!(HAL_GetGameData() -> HAL_GameData).map(|v| Self::new(v)) }
+    }
+}
+
+impl From<GameData> for HAL_GameData {
+    fn from(value: GameData) -> Self {
+        Self {
+            gameData: value.0.map(|v| v as _),
+        }
     }
 }
 

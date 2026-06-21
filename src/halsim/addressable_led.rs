@@ -10,7 +10,7 @@ impl AddressableLEDBuffer {
             HALSIM_RegisterAddressableLEDDataCallback,
             HALSIM_CancelAddressableLEDDataCallback,
             crate::halsim::callbacks::const_buffer_callback_trampoline::<C>,
-            callback
+            callback,
         )
     }
 

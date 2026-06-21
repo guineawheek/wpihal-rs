@@ -44,6 +44,10 @@ impl Notifier {
     pub fn overrun_count(&self) -> HALResult<i32> {
         hal_call!(HAL_GetNotifierOverrun(self.0))
     }
+
+    pub unsafe fn from_raw_handle(handle: HAL_NotifierHandle) -> Self {
+        Self(handle)
+    }
 }
 
 impl Drop for Notifier {

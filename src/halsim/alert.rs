@@ -19,17 +19,20 @@ pub struct HalSimAlertInfo {
 }
 
 impl HalSimAlertInfo {
-    pub unsafe fn get_into(dest: &mut [MaybeUninit<HalSimAlertInfo>]) -> usize {
+    pub unsafe fn get_into(dest: &mut [MaybeUninit<Self>]) -> usize {
         assert_eq!(size_of::<HalSimAlertInfo>(), size_of::<HALSIM_AlertInfo>());
         // SAFETY: Due to extremely funny shenanigans, `HalSimAlertInfo` has the same size/layout as `HALSIM_AlertInfo`
         unsafe { HALSIM_GetAlerts(dest.as_mut_ptr().cast(), dest.len() as i32) as usize }
     }
 
     pub fn get() -> Vec<Self> {
-        let mut output = Vec::with_capacity(get_num_alerts());
+        // we make sure the max alerts is slightly above the number of alerts
+        // in the case that get_num_alerts is getting TOCTOU'ed
+        let max_alerts = get_num_alerts() + 4;
+        let mut output = Vec::with_capacity(max_alerts);
         unsafe {
             let filled = Self::get_into(output.spare_capacity_mut());
-            output.set_len(filled);
+            output.set_len(filled.min(max_alerts));
         }
 
         output

@@ -57,6 +57,10 @@ callback_trait!(ConstBufferCallback(value: &[u8]), |callback, name, buffer: *con
     callback.callback(name, core::slice::from_raw_parts(buffer, count as usize))
 });
 
+callback_trait!(StringCallback(value: &str), |callback, name, s: *const core::ffi::c_char, size: usize| {
+    callback.callback(name, str::from_utf8_unchecked(core::slice::from_raw_parts(s.cast::<u8>(), size)))
+});
+
 #[derive(Debug, Clone)]
 enum Cancel {
     Simple(unsafe extern "C" fn(i32)),
@@ -118,7 +122,15 @@ impl<C> CallbackHandle<C> {
 }
 
 macro_rules! register_callback {
-    ($register:ident, $cancel:ident, $trampoline:expr, $callback:expr, $initial_notify:expr, $index:expr, $channel:expr) => {{
+    (
+        $register:ident,
+        $cancel:ident,
+        $trampoline:expr,
+        $callback:expr,
+        index: $index:expr,
+        channel: $channel:expr,
+        $(initial_notify: $initial_notify:expr,)?
+        ) => {{
         let callback = Box::new($callback);
         let uid = unsafe {
             wpihal_sys::$register(
@@ -126,7 +138,7 @@ macro_rules! register_callback {
                 $channel,
                 Some($trampoline),
                 core::ptr::NonNull::from_ref(callback.as_ref()).cast::<core::ffi::c_void>().as_ptr(),
-                $initial_notify as i32,
+                $($initial_notify as i32,)?
             )
         };
         $crate::halsim::callbacks::CallbackHandle::new_channeled(
@@ -137,14 +149,21 @@ macro_rules! register_callback {
             wpihal_sys::$cancel,
         )
     }};
-    ($register:ident, $cancel:ident, $trampoline:expr, $callback:expr, $initial_notify:expr, $index:expr) => {{
+    (
+        $register:ident,
+        $cancel:ident,
+        $trampoline:expr,
+        $callback:expr,
+        index: $index:expr,
+        $(initial_notify: $initial_notify:expr,)?
+    ) => {{
         let callback = Box::new($callback);
         let uid = unsafe {
             wpihal_sys::$register(
                 $index,
                 Some($trampoline),
                 core::ptr::NonNull::from_ref(callback.as_ref()).cast::<core::ffi::c_void>().as_ptr(),
-                $initial_notify as i32,
+                $($initial_notify as i32,)?
             )
         };
         $crate::halsim::callbacks::CallbackHandle::new_indexed(
@@ -154,7 +173,7 @@ macro_rules! register_callback {
             wpihal_sys::$cancel,
         )
     }};
-    ($register:ident, $cancel:ident, $trampoline:expr, $callback:expr $(, $initial_notify:expr)?) => {{
+    ($register:ident, $cancel:ident, $trampoline:expr, $callback:expr, $(initial_notify: $initial_notify:expr,)?) => {{
         let callback = Box::new($callback);
         let uid = unsafe {
             wpihal_sys::$register(

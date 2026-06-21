@@ -113,7 +113,7 @@ pub fn register_sim_periodic_before_callback<C: SimPeriodCallback>(
         HALSIM_RegisterSimPeriodicBeforeCallback,
         HALSIM_CancelSimPeriodicBeforeCallback,
         sim_period_callback_trampoline::<C>,
-        callback
+        callback,
     )
 }
 
@@ -124,6 +124,6 @@ pub fn register_sim_periodic_after_callback<C: SimPeriodCallback>(
         HALSIM_RegisterSimPeriodicAfterCallback,
         HALSIM_CancelSimPeriodicAfterCallback,
         sim_period_callback_trampoline::<C>,
-        callback
+        callback,
     )
 }
