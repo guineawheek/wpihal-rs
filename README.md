@@ -58,7 +58,6 @@ Actual achievements of these aims is not certain and there are almost certainly 
 ## Things that could use some work
 
 * Better guards against WPILib's overuse of `i32`s for things that are NOT i32 sized
-* Macro-ized halsim wrapers
 * Stability guarentees
 * ~~NTCore support~~ now out of scope.
 * Versioning this in both the semver sense and the wpilib sense they are inconsistent with each other
@@ -66,3 +65,20 @@ Actual achievements of these aims is not certain and there are almost certainly 
 * `WPI_EventHandle` support (and `HAL_ProvideNewDataEventHandle` and friends)
   * I want to plumb this in a way that tokio could use it if one wanted to
 * Opmode support
+  * ID generation not implemented
+* Finish the halsim simdevice hooks (no motivation)
+* Dealing with wpilib install locations moving
+* Proc-macros for defining HAL enum impls and `HALSIM_InitExtension` 
+
+## HALSIM plugins
+
+if you make a cdylib that exports the following:
+
+```rust
+#[link_name = "HALSIM_InitExtension"]
+unsafe extern "C" fn init_extension() -> i32 {
+  // this is your extension's entry point
+  0
+}
+```
+then this should work out, and then you can do your `HAL_RegisterExtension/HAL_RegisterExtensionListener/HAL_SetMain` or whatever

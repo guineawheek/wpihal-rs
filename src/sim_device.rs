@@ -173,7 +173,7 @@ impl Drop for SimDevice {
 }
 
 /// idempotent
-fn to_cstring(s: &str) -> CString {
+pub(crate) fn to_cstring(s: &str) -> CString {
     match CString::new(s.as_bytes()) {
         Ok(cs) => {
             return cs;
@@ -208,6 +208,10 @@ impl SimHalValue {
         unsafe {
             HAL_ResetSimValue(self.0);
         }
+    }
+
+    pub const unsafe fn raw_handle(&self) -> HAL_SimValueHandle {
+        self.0
     }
 }
 
@@ -391,5 +395,12 @@ impl<E: SimEnum, D: InputDirection> SimValue<E, D> {
     /// Sets the corresponding enum value.
     pub fn set(&self, value: E) {
         self.handle.set(&HALValue::Enum(value.index() as i32));
+    }
+}
+
+impl<T, D> SimValue<T, D> {
+    /// here have an escape hatch
+    pub unsafe fn handle(&self) -> &SimHalValue {
+        &self.handle
     }
 }
