@@ -1026,12 +1026,12 @@ dependencies = [
  "cc",
  "convert_case",
  "regex",
- "wpilib-nativeutils",
+ "wpilib-native-utils",
  "wpiutil-sys",
 ]
 
 [[package]]
-name = "wpilib-nativeutils"
+name = "wpilib-native-utils"
 version = "1.0.0"
 dependencies = [
  "anyhow",
@@ -1053,7 +1053,7 @@ version = "1.0.0+wpilib-2027.0.0-alpha-6"
 dependencies = [
  "bindgen",
  "regex",
- "wpilib-nativeutils",
+ "wpilib-native-utils",
 ]
 
 [[package]]

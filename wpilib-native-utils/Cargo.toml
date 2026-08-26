@@ -1,5 +1,5 @@
 [package]
-name = "wpilib-nativeutils"
+name = "wpilib-native-utils"
 edition = "2024"
 version = "1.0.0"
 license.workspace = true

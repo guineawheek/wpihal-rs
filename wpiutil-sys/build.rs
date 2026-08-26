@@ -1,17 +1,17 @@
 use bindgen::{RustTarget, callbacks::ParseCallbacks};
-use wpilib_nativeutils::{ReleaseTrain, WPILibVersion};
+use wpilib_native_utils::{ReleaseTrain, WPILibVersion};
 
 pub fn main() {
-    let wpilib_version = wpilib_nativeutils::bind_version();
-    let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release);
+    let wpilib_version = wpilib_native_utils::bind_version();
+    let local_maven = wpilib_native_utils::get_local_maven(ReleaseTrain::Release);
     let wpilib_maven = wpilib_version.get_wpilib_maven();
     let remote_maven = wpilib_version.get_remote_maven(ReleaseTrain::Release);
     let repos = [local_maven, wpilib_maven, remote_maven];
-    let buildlibs = wpilib_nativeutils::out_dir().join("buildlibs");
+    let buildlibs = wpilib_native_utils::out_dir().join("buildlibs");
 
-    wpilib_nativeutils::download_native_library_artifacts(
+    wpilib_native_utils::download_native_library_artifacts(
         &repos,
-        wpilib_nativeutils::platform(),
+        wpilib_native_utils::platform(),
         "org.wpilib.wpiutil",
         "wpiutil-cpp",
         &wpilib_version.to_string(),
@@ -21,13 +21,13 @@ pub fn main() {
     .unwrap();
 
     println!("cargo:rerun-if-changed=UtilsInclude.h");
-    wpilib_nativeutils::rustc_link_search(
+    wpilib_native_utils::rustc_link_search(
         &buildlibs,
-        wpilib_nativeutils::platform(),
+        wpilib_native_utils::platform(),
         std::env::var("CARGO_FEATURE_SHARED").is_ok(),
-        wpilib_nativeutils::is_debug(),
+        wpilib_native_utils::is_debug(),
     );
-    wpilib_nativeutils::rustc_debug_switch(&["wpiutil"], wpilib_nativeutils::is_debug());
+    wpilib_native_utils::rustc_debug_switch(&["wpiutil"], wpilib_native_utils::is_debug());
     generate_bindings_for_header(&&wpilib_version, bindgen::Builder::default(), "bindings.rs");
 }
 
@@ -46,9 +46,9 @@ fn generate_bindings_for_header(
         "-v".to_string(),
         "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH".to_string(),
     ];
-    wpilib_nativeutils::add_sysroot_to_clang_args(
+    wpilib_native_utils::add_sysroot_to_clang_args(
         &mut clang_args,
-        wpilib_nativeutils::platform(),
+        wpilib_native_utils::platform(),
         wpilib_version,
     )
     .unwrap();
@@ -60,8 +60,8 @@ fn generate_bindings_for_header(
         .derive_copy(false)
         .clang_arg(format!(
             "-I{}",
-            wpilib_nativeutils::stringify_path(
-                &wpilib_nativeutils::out_dir().join("buildlibs/headers")
+            wpilib_native_utils::stringify_path(
+                &wpilib_native_utils::out_dir().join("buildlibs/headers")
             )
         ))
         .clang_args(&clang_args)
@@ -78,7 +78,7 @@ fn generate_bindings_for_header(
         .expect("Unable to generate bindings");
 
     bindings
-        .write_to_file(wpilib_nativeutils::out_dir().join(output))
+        .write_to_file(wpilib_native_utils::out_dir().join(output))
         .expect("Couldn't write bindings!");
 }
 

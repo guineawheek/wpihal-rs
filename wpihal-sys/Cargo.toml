@@ -16,7 +16,7 @@ shared = ["wpiutil-sys/shared"]
 robot-controller = ["wpiutil-sys/robot-controller"]
 
 [build-dependencies]
-wpilib-nativeutils.workspace = true
+wpilib-native-utils.workspace = true
 
 bindgen.workspace = true
 regex.workspace = true
