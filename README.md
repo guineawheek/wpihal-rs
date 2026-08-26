@@ -4,18 +4,20 @@ Safe-enough™ WPILib HAL bindings in Rust
 
 ## Installation
 
-You can add `wpihal` as a git dependency to your project toml:
+You can add `wpihal` as a direct crates.io dependency to your project toml:
 
 ```toml
 [dependencies]
 wpihal = { version = "1.0.0", features = ["robot-controller"] }
 ```
 
-We attempt to use "semantic versioning", which means the versions won't match the WPILib versions. 
-We will still embed the corresponding WPILib release in the suffix, however.
+If you prefer to live on the edge, however, you can pin wpihal to a branch or a commit:
 
-* For alpha/beta releases, there will be a prerelease suffix: `1.0.0-2027.0.0-alpha-6`
-* For full releases, there will be an additively ignored suffix, e.g.: `12.0.0+2027.2.1`
+```toml
+wpihal = { git = "https://github.com/guineawheek/wpihal-rs", branch = "2027", features = ["robot-controller"] }
+```
+
+Don't forget to run `cargo update` to actually update your checked-out branch if you do this, however.
 
 To accelerate build times, you should also install the version of WPILib corresponding to this package's version; in this case **v2027.0.0-alpha-6**;
 as the build scripts first search your computer for the WPILib Maven artifacts in `~/wpilib` (or `%PUBLIC%\wpilib` on bad operating systems) before trying to download them externally.
@@ -24,10 +26,13 @@ You may need to install `libclang-dev` or whatever equivalent exists for your pl
 
 You also may need to install the relevant toolchains via `./gradlew installSystemCoreToolchain` in a gradle project somewhere, although we try to first find the relevant sysroots in your WPILib install first.
 
-## Maintenance commitment
+## Versioning
 
-As long as I'm around still vaguely doing things in Rust, I'll probably keep this updated. 
-By design, it isn't a huge maintenance burden.
+We attempt to use "semantic versioning", which means the versions won't match the WPILib versions. 
+We will still embed the corresponding WPILib release in the suffix, however.
+
+* For alpha/beta releases, there will be a prerelease suffix: `1.0.0-2027.0.0-alpha-6`
+* For full releases, there will be an additively ignored suffix, e.g.: `12.0.0+2027.2.1`
 
 ## Compiling for coprocessors
 
@@ -98,3 +103,8 @@ then this should work out, and then you can do your `HAL_RegisterExtension/HAL_R
 ## AI contribution policy
 
 See [rust-lang/rust's policy.](https://forge.rust-lang.org/policies/llm-usage.html)
+
+## Maintenance commitment
+
+As long as I'm around still vaguely doing things in Rust, I'll probably keep this updated. 
+By design, it isn't a huge maintenance burden.
