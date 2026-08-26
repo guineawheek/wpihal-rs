@@ -1010,7 +1010,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "wpihal"
-version = "202700.0.0-2027.0.0-alpha-6"
+version = "1.0.0-2027.0.0-alpha-6"
 dependencies = [
  "embedded-hal",
  "paste",
@@ -1042,7 +1042,7 @@ dependencies = [
 
 [[package]]
 name = "wpiutil"
-version = "202700.0.0-2027.0.0-alpha-6"
+version = "1.0.0-2027.0.0-alpha-6"
 dependencies = [
  "wpiutil-sys",
 ]
