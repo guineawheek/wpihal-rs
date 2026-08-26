@@ -21,7 +21,7 @@ pub fn main() {
 
     let cache_marker = buildlibs.join(format!(
         ".nativeutils_downloaded_org.wpilib.hal.hal-cpp-{}",
-        wpilib_nativeutils::version()
+        wpilib_nativeutils::LATEST_VERSION,
     ));
     let generate_usage_reporting = !cache_marker.exists();
 
@@ -30,7 +30,7 @@ pub fn main() {
         wpilib_nativeutils::platform(),
         "org.wpilib.hal",
         "hal-cpp",
-        wpilib_nativeutils::version(),
+        wpilib_nativeutils::LATEST_VERSION,
         &buildlibs,
         None,
     )
@@ -40,7 +40,7 @@ pub fn main() {
         wpilib_nativeutils::platform(),
         "org.wpilib.wpiutil",
         "wpiutil-cpp",
-        wpilib_nativeutils::version(),
+        wpilib_nativeutils::LATEST_VERSION,
         &buildlibs,
         None,
     )
@@ -50,7 +50,7 @@ pub fn main() {
         wpilib_nativeutils::platform(),
         "org.wpilib.ntcore",
         "ntcore-cpp",
-        wpilib_nativeutils::version(),
+        wpilib_nativeutils::LATEST_VERSION,
         &buildlibs,
         None,
     )
@@ -60,7 +60,7 @@ pub fn main() {
         wpilib_nativeutils::platform(),
         "org.wpilib.datalog",
         "datalog-cpp",
-        wpilib_nativeutils::version(),
+        wpilib_nativeutils::LATEST_VERSION,
         &buildlibs,
         None,
     )
@@ -70,7 +70,7 @@ pub fn main() {
         wpilib_nativeutils::platform(),
         "org.wpilib.wpinet",
         "wpinet-cpp",
-        wpilib_nativeutils::version(),
+        wpilib_nativeutils::LATEST_VERSION,
         &buildlibs,
         None,
     )

@@ -83,6 +83,7 @@ impl Display for NativeUtilsError {
 }
 impl std::error::Error for NativeUtilsError {}
 
+/// A Maven repository.
 pub struct MavenRepo(pub String);
 
 impl MavenRepo {
@@ -107,10 +108,11 @@ impl MavenRepo {
     ) -> anyhow::Result<Vec<u8>> {
         let uri = artifact.construct_uri(self.0.as_str(), platform);
         println!("uri: {}", uri);
-        Ok(reqwest::blocking::get(uri)?
-            .error_for_status()?
-            .bytes()?
-            .to_vec())
+        Ok(ureq::get(uri)
+            .call()?
+            .body_mut()
+            .with_config()
+            .read_to_vec()?)
     }
 
     fn fetch_artifact_fs(
@@ -124,6 +126,7 @@ impl MavenRepo {
     }
 }
 
+/// A supported wpilib platform
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Platform {
     LinuxSystemCore, // systemcore
@@ -552,12 +555,8 @@ fn latest_gcc_version(p: &Path) -> Option<PathBuf> {
     )
 }
 
-/// Gets the WPILib version (which is typically set to package version)
-pub fn version() -> &'static str {
-    static VERSION: LazyLock<String> =
-        LazyLock::new(|| std::env::var("CARGO_PKG_VERSION").unwrap());
-    VERSION.as_str()
-}
+/// The latest supported version.
+pub const LATEST_VERSION: &str = "2027.0.0-alpha-6";
 
 /// Gets the year string.
 /// This **will** change in the future.

@@ -9,6 +9,6 @@ description = "Utility to pull down Maven artifacts from the WPILib Artifactory"
 
 [dependencies]
 anyhow.workspace = true
-reqwest.workspace = true
+ureq.workspace = true
 which.workspace = true
 zip.workspace = true
