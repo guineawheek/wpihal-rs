@@ -9,20 +9,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - container: wpilib/systemcore-cross-ubuntu:2027-24.04
+          - container: wpilib/systemcore-cross-debian:trixie
             artifact-name: SystemCore
             target: "aarch64-unknown-linux-gnu"
             flags: "--features robot-controller"
-          - container: wpilib/aarch64-cross-ubuntu:bookworm-24.04
+          - container: wpilib/aarch64-cross-debian:trixie
             artifact-name: Arm64
             target: "aarch64-unknown-linux-gnu"
             flags: ""
-          - container: wpilib/ubuntu-base:24.04
+          - container: wpilib/systemcore-cross-debian:trixie
             artifact-name: Linux
             target: "x86_64-unknown-linux-gnu"
             flags: ""
     name: "Build - ${{ matrix.artifact-name }}"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     container: ${{ matrix.container }}
     steps:
       - name: Install build dependencies
@@ -44,21 +44,19 @@ jobs:
         run: cargo run -p build-test ${{ matrix.flags }} && cargo run -p build-test ${{ matrix.flags }} --release
 
   build-host:
-    env: 
-      MACOSX_DEPLOYMENT_TARGET: 13.3
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2022
+          - os: windows-latest
             artifact-name: WinX64
             architecture: x64
             flags: ""
-          - os: windows-2022
+          - os: windows-latest
             artifact-name: WinArm64
             architecture: aarch64
             flags: ""
-          - os: macos-15
+          - os: macos-26
             artifact-name: macOS
             architecture: aarch64
             flags: ""

@@ -197,9 +197,9 @@ pub enum ReleaseTrain {
 }
 
 pub fn get_local_maven(release_train: ReleaseTrain) -> MavenRepo {
-    let user_home = home::home_dir()
+    let user_home = std::env::home_dir()
         .unwrap_or_default()
-        .to_string_lossy()
+        .display()
         .to_string();
     match release_train {
         ReleaseTrain::Development => {
@@ -229,7 +229,7 @@ pub fn get_wpilib_root(year: &str) -> PathBuf {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let containing_dir = home::home_dir().unwrap_or_default();
+        let containing_dir = std::env::home_dir().unwrap_or_default();
         containing_dir.join("wpilib").join(year)
     }
 }
@@ -562,7 +562,7 @@ pub fn version() -> &'static str {
 /// Gets the year string.
 /// This **will** change in the future.
 pub fn year() -> &'static str {
-    "2027_alpha6"
+    "2027_alpha5"
 }
 
 /// Gets the current compilation target based on `build.rs` variables
