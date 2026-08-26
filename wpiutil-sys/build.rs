@@ -1,30 +1,20 @@
-#![allow(unused)]
-
-use std::{
-    collections::BTreeMap,
-    path::{Path, PathBuf},
-    sync::LazyLock,
-};
-
 use bindgen::{RustTarget, callbacks::ParseCallbacks};
-use wpilib_nativeutils::{
-    Artifact, ArtifactType, MavenRepo, Platform, ReleaseTrain, is_debug, stringify_path,
-};
+use wpilib_nativeutils::{ReleaseTrain, WPILibVersion};
 
 pub fn main() {
-    let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release2027);
-    let wpilib_maven = wpilib_nativeutils::get_wpilib_maven();
-    let remote_maven = wpilib_nativeutils::get_remote_maven(ReleaseTrain::Release2027);
+    let wpilib_version = wpilib_nativeutils::bind_version();
+    let local_maven = wpilib_nativeutils::get_local_maven(ReleaseTrain::Release);
+    let wpilib_maven = wpilib_version.get_wpilib_maven();
+    let remote_maven = wpilib_version.get_remote_maven(ReleaseTrain::Release);
     let repos = [local_maven, wpilib_maven, remote_maven];
     let buildlibs = wpilib_nativeutils::out_dir().join("buildlibs");
-    let headers = buildlibs.join("headers");
 
     wpilib_nativeutils::download_native_library_artifacts(
         &repos,
         wpilib_nativeutils::platform(),
         "org.wpilib.wpiutil",
         "wpiutil-cpp",
-        wpilib_nativeutils::VERSION,
+        &wpilib_version.to_string(),
         &buildlibs,
         None,
     )
@@ -38,10 +28,14 @@ pub fn main() {
         wpilib_nativeutils::is_debug(),
     );
     wpilib_nativeutils::rustc_debug_switch(&["wpiutil"], wpilib_nativeutils::is_debug());
-    generate_bindings_for_header(bindgen::Builder::default(), "bindings.rs");
+    generate_bindings_for_header(&&wpilib_version, bindgen::Builder::default(), "bindings.rs");
 }
 
-fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
+fn generate_bindings_for_header(
+    wpilib_version: &WPILibVersion,
+    builder: bindgen::Builder,
+    output: &str,
+) {
     // Some config copied from first-rust-competition https://github.com/first-rust-competition/first-rust-competition/blob/master/hal-gen/src/main.rs
     //const SYMBOL_REGEX: &str = r"(HAL_|HALSIM_)\w+";
 
@@ -52,8 +46,12 @@ fn generate_bindings_for_header(builder: bindgen::Builder, output: &str) {
         "-v".to_string(),
         "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH".to_string(),
     ];
-    wpilib_nativeutils::add_sysroot_to_clang_args(&mut clang_args, wpilib_nativeutils::platform())
-        .unwrap();
+    wpilib_nativeutils::add_sysroot_to_clang_args(
+        &mut clang_args,
+        wpilib_nativeutils::platform(),
+        wpilib_version,
+    )
+    .unwrap();
 
     let bindings = builder
         .rust_target(RustTarget::stable(85, 0).unwrap())
@@ -90,8 +88,8 @@ pub struct WPIUtilCallbacks {}
 impl ParseCallbacks for WPIUtilCallbacks {
     fn enum_variant_name(
         &self,
-        enum_name: Option<&str>,
-        original_variant_name: &str,
+        _enum_name: Option<&str>,
+        _original_variant_name: &str,
         _variant_value: bindgen::callbacks::EnumVariantValue,
     ) -> Option<String> {
         None

@@ -1,25 +1,30 @@
 [workspace]
 members = [
     "wpilib-nativeutils", 
-    "wpilib-nativeutils-tester", 
     "wpihal-sys",
     "wpiutil",
     "wpiutil-sys",
     "build-test",
 ]
-# this should be YEARXX.Y.Z-prerelease
+# this should be YEARXX.Y.Z+wpilib-target
 # To bump the wpilib dep, edit it in wpilib-nativeutils
-package.version = "202700.0.0-alpha-6"
+package.version = "1.0.0-2027.0.0-alpha-6"
 package.license = "MIT OR Apache-2.0"
-package.authors = ["guineawheek <guineawheek@gmail.com>"]
+package.authors = ["guineawheek"]
+package.homepage = "https://github.com/guineawheek/wpihal-rs"
 package.repository = "https://github.com/guineawheek/wpihal-rs"
+package.keywords = ["ffi", "bindings", "robotics", "frc"]
+package.categories = ["api-bindings", "science::robotics", "hardware-support"]
 
 [package]
 name = "wpihal"
 description = "Rust bindings for the WPILib HAL"
 version.workspace = true
 license.workspace = true
+homepage.workspace = true
 repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 authors.workspace = true
 edition = "2024"
 
@@ -33,16 +38,25 @@ shared = ["wpihal-sys/shared", "wpiutil/shared"]
 robot-controller = ["wpihal-sys/robot-controller", "wpiutil/robot-controller"]
 
 [dependencies]
-embedded-hal = "1.0.0"
-wpihal-sys = { path = "./wpihal-sys" }
-wpiutil = { path = "./wpiutil"}
-paste = "1"
+wpihal-sys.workspace = true
+wpiutil.workspace = true
+
+paste.workspace = true
+embedded-hal.workspace = true
 
 [workspace.dependencies]
+wpilib-nativeutils = { version = "1.0.0", path = "./wpilib-nativeutils" }
+wpiutil = { version = "202700.0.0-2027.0.0-alpha-6", path = "./wpiutil" }
+wpiutil-sys = { version = "1.0.0", path = "./wpiutil-sys" }
+wpihal-sys = { version = "1.0.0", path = "./wpihal-sys" }
+
+paste = "1"
 anyhow = "1"
 bindgen = "0.72"
 cc = "1.4"
 convert_case = "0.11"
+
+embedded-hal = "1.0.0"
 
 regex = "1.13"
 ureq = "3.4.0"

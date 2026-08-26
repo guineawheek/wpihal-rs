@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Install build dependencies
         run: apt-get update && apt-get install -y libclang-dev
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
           fetch-depth: 0
@@ -71,7 +71,7 @@ jobs:
     name: "Build - ${{ matrix.artifact-name }}"
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
           fetch-depth: 0

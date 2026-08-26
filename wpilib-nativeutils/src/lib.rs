@@ -107,7 +107,7 @@ impl MavenRepo {
         platform: Platform,
     ) -> anyhow::Result<Vec<u8>> {
         let uri = artifact.construct_uri(self.0.as_str(), platform);
-        println!("uri: {}", uri);
+        eprintln!("Network uri: {uri}");
         Ok(ureq::get(uri)
             .call()?
             .body_mut()
@@ -121,7 +121,7 @@ impl MavenRepo {
         platform: Platform,
     ) -> anyhow::Result<Vec<u8>> {
         let uri = artifact.construct_uri(&self.0.as_str()[5..], platform);
-        println!("uri: {}", uri);
+        eprintln!("Filesystem uri: {uri}");
         Ok(std::fs::read(uri)?)
     }
 }
@@ -201,7 +201,6 @@ impl Platform {
 pub enum ReleaseTrain {
     Development,
     Release,
-    Release2027,
 }
 
 pub fn get_local_maven(release_train: ReleaseTrain) -> MavenRepo {
@@ -213,43 +212,8 @@ pub fn get_local_maven(release_train: ReleaseTrain) -> MavenRepo {
         ReleaseTrain::Development => {
             MavenRepo(format!("file:{user_home}/releases/maven/development"))
         }
-        ReleaseTrain::Release | ReleaseTrain::Release2027 => {
-            MavenRepo(format!("file:{user_home}/releases/maven/release"))
-        }
+        ReleaseTrain::Release => MavenRepo(format!("file:{user_home}/releases/maven/release")),
     }
-}
-
-pub fn get_remote_maven(release_train: ReleaseTrain) -> MavenRepo {
-    const REMOTE_BASE: &str = "https://frcmaven.wpi.edu/artifactory";
-    match release_train {
-        ReleaseTrain::Development => MavenRepo(format!("{REMOTE_BASE}/development")),
-        ReleaseTrain::Release => MavenRepo(format!("{REMOTE_BASE}/release")),
-        ReleaseTrain::Release2027 => MavenRepo(format!("{REMOTE_BASE}/release-2027")),
-    }
-}
-
-pub fn get_wpilib_root() -> PathBuf {
-    #[cfg(target_os = "windows")]
-    {
-        let public_folder =
-            std::env::var_os("PUBLIC").unwrap_or(std::ffi::OsString::from("C:\\Users\\Public"));
-        Path::new(&public_folder).join("wpilib").join(wpilib_year())
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let containing_dir = std::env::home_dir().unwrap_or_default();
-        containing_dir.join("wpilib").join(wpilib_year())
-    }
-}
-
-pub fn get_wpilib_maven() -> MavenRepo {
-    let wpilib_maven_root = get_wpilib_root().join("maven");
-    #[cfg(target_os = "windows")]
-    let wpilib_root_string = wpilib_maven_root.to_string_lossy().replace("\\", "/");
-    #[cfg(not(target_os = "windows"))]
-    let wpilib_root_string = wpilib_maven_root.to_string_lossy().to_string();
-
-    MavenRepo(format!("file:/{wpilib_root_string}"))
 }
 
 /*
@@ -314,7 +278,7 @@ pub fn download_native_library_artifacts(
     if cache_marker.exists() {
         return Ok(());
     } else {
-        println!("cargo::warning='{} doesn't exist, downloading'", cache_marker.display());
+        eprintln!("{} doesn't exist, downloading", cache_marker.display());
     }
 
     let headers_dir = buildlibs.join("headers");
@@ -383,10 +347,11 @@ pub fn rustc_link_search(dir: &Path, platform: Platform, shared: bool, debug: bo
     )
 }
 
-pub fn header_search_path(dir: &Path) -> PathBuf {
-    dir.join("headers")
-}
+//pub fn header_search_path(dir: &Path) -> PathBuf {
+//    dir.join("headers")
+//}
 
+/// Select `rustc-link-lib` depending on our debug/release compilation profile
 pub fn rustc_debug_switch(libs: &[&str], debug: bool) {
     for lib in libs {
         if debug {
@@ -417,8 +382,9 @@ pub fn stringify_path(path: &Path) -> String {
 pub fn add_sysroot_to_clang_args(
     clang_args: &mut Vec<String>,
     platform: Platform,
+    version: &WPILibVersion,
 ) -> anyhow::Result<()> {
-    if let Some(sysroot) = locate_sysroot(platform) {
+    if let Some(sysroot) = locate_sysroot(platform, version) {
         eprintln!("Located sysroot at {:?}", sysroot.path());
         eprintln!("Located sysroot c++ at {:?}", sysroot.cpp_include());
         clang_args.push(format!("--sysroot={}", stringify_path(sysroot.path())));
@@ -468,7 +434,7 @@ impl Sysroot {
 }
 
 /// Locates ths sysroot and relevant directories to be included in order for C++ bindgen to work
-pub fn locate_sysroot(platform: Platform) -> Option<Sysroot> {
+pub fn locate_sysroot(platform: Platform, version: &WPILibVersion) -> Option<Sysroot> {
     // Locates the sysroot.
     /*
     Sysroots are located at these paths at this priority:
@@ -485,22 +451,25 @@ pub fn locate_sysroot(platform: Platform) -> Option<Sysroot> {
 
       Everything else shouldn't need one because it's a native build.
      */
+    let year = version.year;
     let check_dirs = match platform {
         Platform::LinuxSystemCore => {
             // first check the local location first and then try everything else
 
             let mut dirs = Vec::new();
-            if let Some(gcc_path) =
-                which::which(format!("aarch64-systemcore{YEAR}-linux-gnu-gcc")).ok()
-            {
+            if let Some(gcc_path) = which::which(version.systemcore_tool("gcc")).ok() {
                 dirs.push(gcc_path.parent()?.join("../aarch64-linux-gnu/sysroot"));
             }
 
             if let Some(home) = std::env::home_dir() {
                 dirs.push(home.join(format!(
-                    ".gradle/toolchains/first/{YEAR}/systemcore/aarch64-linux-gnu/sysroot"
+                    ".gradle/toolchains/first/{year}/systemcore/aarch64-linux-gnu/sysroot"
                 )));
-                dirs.push(get_wpilib_root().join("systemcore/aarch64-linux-gnu/sysroot"));
+                dirs.push(
+                    version
+                        .get_wpilib_root()
+                        .join("systemcore/aarch64-linux-gnu/sysroot"),
+                );
             }
 
             #[cfg(target_os = "linux")]
@@ -509,15 +478,13 @@ pub fn locate_sysroot(platform: Platform) -> Option<Sysroot> {
         }
         Platform::LinuxArm64 => {
             let mut dirs = Vec::new();
-            if let Some(gcc_path) =
-                which::which(format!("aarch64-{DEBIAN_VERSION}-linux-gnu-gcc")).ok()
-            {
+            if let Some(gcc_path) = which::which(version.aarch64_tool("gcc")).ok() {
                 dirs.push(gcc_path.parent()?.join("../aarch64-linux-gnu/sysroot"));
             }
 
             if let Some(home) = std::env::home_dir() {
                 dirs.push(home.join(format!(
-                    ".gradle/toolchains/first/{YEAR}/arm64/aarch64-linux-gnu/sysroot"
+                    ".gradle/toolchains/first/{year}/arm64/aarch64-linux-gnu/sysroot"
                 )));
             }
 
@@ -567,17 +534,142 @@ fn latest_gcc_version(p: &Path) -> Option<PathBuf> {
     )
 }
 
-/// The latest supported version.
-pub const VERSION: &str = "2027.0.0-alpha-6";
-/// debian version for linkage
-pub const DEBIAN_VERSION: &str = "trixie";
-/// year (number)
-pub const YEAR: u64 = 2027;
+/// Calculate the bind version from the package version
+pub fn bind_version() -> WPILibVersion {
+    let full_version = std::env::var("CARGO_PKG_VERSION").unwrap();
+    let (_, wpi_version) = full_version.split_once("+wpilib-").unwrap();
+    WPILibVersion::new(wpi_version)
+}
 
-/// Gets the year string.
-/// This **will** change in the future.
-pub fn wpilib_year() -> &'static str {
-    "2027_alpha5"
+/// WPILib version
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WPILibVersion {
+    /// Year
+    pub year: u64,
+    /// Minor release
+    pub minor: u64,
+    /// Patch release
+    pub patch: u64,
+    /// Pre-release trailer
+    pub pre_release: Option<String>,
+}
+
+impl core::fmt::Display for WPILibVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.year, self.minor, self.patch)?;
+        if let Some(pre) = self.pre_release.as_deref() {
+            write!(f, "-{pre}")?;
+        }
+
+        Ok(())
+    }
+}
+
+impl WPILibVersion {
+    /// panics if it's not right lol
+    pub fn new(version: &str) -> Self {
+        let (year, rest) = version.split_once(".").unwrap();
+        let year = year.parse().unwrap();
+        if year < 2027 {
+            panic!("Pre-systemcore WPILib (attempted: {version}) is no longer supported!");
+        }
+
+        let (minor, patch_pre) = rest.split_once(".").unwrap();
+        let minor = minor.parse().unwrap();
+
+        let (patch, pre_release) = match patch_pre.split_once("-") {
+            Some((patch, pre)) => (patch.parse().unwrap(), Some(pre.to_string())),
+            None => (patch_pre.parse().unwrap(), None),
+        };
+
+        Self {
+            year,
+            minor,
+            patch,
+            pre_release,
+        }
+    }
+
+    /// Generates the tool name for systemcore (e.g. aarch64-systemcore2027-linux-gnu)
+    pub fn systemcore_tool(&self, tool_name: &str) -> String {
+        format!("aarch64-systemcore{}-linux-gnu-{tool_name}", self.year)
+    }
+
+    /// Generates the tool name for linux aarch64 (e.g. aarch64-trixie-linux-gnu)
+    pub fn aarch64_tool(&self, tool_name: &str) -> String {
+        let debian = match (
+            self.year,
+            self.minor,
+            self.patch,
+            self.pre_release.as_deref(),
+        ) {
+            (2027, 0, 0, Some("alpha-1") | Some("alpha-2")) => "bookworm",
+            (2027..=2028, ..) => "trixie",
+            _ => panic!("WPILib version not supported yet"),
+        };
+
+        format!("aarch64-{debian}-linux-gnu-{tool_name}")
+    }
+
+    /// Gets the remote WPILib maven.
+    pub fn get_remote_maven(&self, release_train: ReleaseTrain) -> MavenRepo {
+        let trailer = if self.year == 2027 && self.pre_release.is_some() {
+            "-2027"
+        } else {
+            ""
+        };
+
+        const REMOTE_BASE: &str = "https://frcmaven.wpi.edu/artifactory";
+        match release_train {
+            ReleaseTrain::Development => MavenRepo(format!("{REMOTE_BASE}/development{trailer}")),
+            ReleaseTrain::Release => MavenRepo(format!("{REMOTE_BASE}/release{trailer}")),
+        }
+    }
+
+    fn wpilib_year(&self) -> String {
+        match (
+            self.year,
+            self.minor,
+            self.patch,
+            self.pre_release.as_deref(),
+        ) {
+            (2027, 0, 0, Some("alpha-1") | Some("alpha-2")) => "2027_alpha1".to_string(),
+            (2027, 0, 0, Some("alpha-5") | Some("alpha-6")) => "2027_alpha5".to_string(),
+            (2027, 0, 0, Some(..)) => panic!("Current 2027 alpha is not supported (yet)"),
+            (2027, 0, 0, None) => "2027".to_string(),
+            (year, ..) => year.to_string(),
+        }
+    }
+
+    /// Gets the WPILib install root.
+    ///
+    /// This is platform-varying.
+    pub fn get_wpilib_root(&self) -> PathBuf {
+        #[cfg(target_os = "windows")]
+        {
+            let public_folder =
+                std::env::var_os("PUBLIC").unwrap_or(std::ffi::OsString::from("C:\\Users\\Public"));
+            Path::new(&public_folder)
+                .join("wpilib")
+                .join(self.wpilib_year())
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let containing_dir = std::env::home_dir().unwrap_or_default();
+            containing_dir.join("wpilib").join(self.wpilib_year())
+        }
+    }
+
+    /// Gets the WPILib maven install root.
+    pub fn get_wpilib_maven(&self) -> MavenRepo {
+        let wpilib_maven_root = self.get_wpilib_root().join("maven");
+        #[cfg(target_os = "windows")]
+        let wpilib_root_string = wpilib_maven_root.to_string_lossy().replace("\\", "/");
+        #[cfg(not(target_os = "windows"))]
+        let wpilib_root_string = wpilib_maven_root.to_string_lossy().to_string();
+
+        MavenRepo(format!("file:/{wpilib_root_string}"))
+    }
 }
 
 /// Gets the current compilation target based on `build.rs` variables
@@ -609,7 +701,7 @@ pub fn out_dir() -> &'static Path {
 }
 
 // MSVC, the blight up on the software ecosystem it is, chokes on device paths in includes.
-pub fn fix_paths(path: &Path) -> PathBuf {
+pub fn fix_windows(path: &Path) -> PathBuf {
     if cfg!(windows) {
         let s = path.to_str().unwrap();
         s.strip_prefix("\\\\?\\").unwrap_or(s).into()
