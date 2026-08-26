@@ -138,7 +138,7 @@ pub enum Platform {
 }
 
 impl Platform {
-    pub fn platform_string(&self) -> &'static str {
+    pub const fn platform_string(&self) -> &'static str {
         match self {
             Platform::LinuxArm64 => "linuxarm64",
             Platform::LinuxX86_64 => "linuxx86-64",
@@ -149,7 +149,7 @@ impl Platform {
         }
     }
 
-    pub fn operating_system(&self) -> &'static str {
+    pub const fn operating_system(&self) -> &'static str {
         match self {
             Platform::LinuxArm64 => "linux",
             Platform::LinuxX86_64 => "linux",
@@ -160,7 +160,7 @@ impl Platform {
         }
     }
 
-    pub fn architecture(&self) -> &'static str {
+    pub const fn architecture(&self) -> &'static str {
         match self {
             Platform::LinuxArm64 => "arm64",
             Platform::LinuxSystemCore => "systemcore",
@@ -169,6 +169,11 @@ impl Platform {
             Platform::WindowsX86_64 => "x86-64",
             Platform::WindowsArm64 => "arm64",
         }
+    }
+
+    pub const fn requires_sysroot(&self) -> bool {
+        self.architecture().eq_ignore_ascii_case("arm64")
+            && self.operating_system().eq_ignore_ascii_case("linux")
     }
 
     pub fn from_rust_target(rust_target: &str, robot_controller: bool) -> Option<Self> {
@@ -223,22 +228,22 @@ pub fn get_remote_maven(release_train: ReleaseTrain) -> MavenRepo {
     }
 }
 
-pub fn get_wpilib_root(year: &str) -> PathBuf {
+pub fn get_wpilib_root() -> PathBuf {
     #[cfg(target_os = "windows")]
     {
         let public_folder =
             std::env::var_os("PUBLIC").unwrap_or(std::ffi::OsString::from("C:\\Users\\Public"));
-        Path::new(&public_folder).join("wpilib").join(year)
+        Path::new(&public_folder).join("wpilib").join(wpilib_year())
     }
     #[cfg(not(target_os = "windows"))]
     {
         let containing_dir = std::env::home_dir().unwrap_or_default();
-        containing_dir.join("wpilib").join(year)
+        containing_dir.join("wpilib").join(wpilib_year())
     }
 }
 
 pub fn get_wpilib_maven() -> MavenRepo {
-    let wpilib_maven_root = get_wpilib_root(year()).join("maven");
+    let wpilib_maven_root = get_wpilib_root().join("maven");
     #[cfg(target_os = "windows")]
     let wpilib_root_string = wpilib_maven_root.to_string_lossy().replace("\\", "/");
     #[cfg(not(target_os = "windows"))]
@@ -308,6 +313,8 @@ pub fn download_native_library_artifacts(
     ));
     if cache_marker.exists() {
         return Ok(());
+    } else {
+        println!("cargo::warning='{} doesn't exist, downloading'", cache_marker.display());
     }
 
     let headers_dir = buildlibs.join("headers");
@@ -427,6 +434,8 @@ pub fn add_sysroot_to_clang_args(
             // only the rio target has a separate bits header path for some reason
             clang_args.push(format!("-I{}", stringify_path(&bits_headers)));
         }
+    } else if platform.requires_sysroot() {
+        anyhow::bail!("Could not find a C++ sysroot for {platform:?}!")
     }
     Ok(())
 }
@@ -462,68 +471,71 @@ impl Sysroot {
 pub fn locate_sysroot(platform: Platform) -> Option<Sysroot> {
     // Locates the sysroot.
     /*
-    Sysroots are located at:
+    Sysroots are located at these paths at this priority:
       systemcore:
-        /usr/local/aarch64-linux-gnu/sysroot
+        $(dirname "$(which aarch64-systemcore{YEAR}-linux-gnu-gcc)")/../aarch64-linux-gnu/sysroot
+        ~/.gradle/toolchains/first/{YEAR}/systemcore/aarch64-linux-gnu/sysroot
         ~/wpilib/{YEAR}/systemcore/aarch64-linux-gnu/sysroot
-      aarch64:
         /usr/local/aarch64-linux-gnu/sysroot
+      aarch64:
+        $(dirname "$(which aarch64-{DEBIAN_VERSION}-linux-gnu-gcc)")/../aarch64-linux-gnu/sysroot
+        ~/.gradle/toolchains/first/{YEAR}/arm64/aarch64-linux-gnu/sysroot
+        /usr/local/aarch64-linux-gnu/sysroot
+        (last ditch effort): check if the host platform is also aarch64-unknown-linux-gnu and then run /usr/include
 
       Everything else shouldn't need one because it's a native build.
      */
-    match platform {
+    let check_dirs = match platform {
         Platform::LinuxSystemCore => {
             // first check the local location first and then try everything else
-            const SYSTEMCORE_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
-            const SYSTEMCORE_TARGET: &str = "aarch64-linux-gnu";
-            const EXPECT: &str = "Cannot find SystemCore sysroot!";
-            let user_sysroot = get_wpilib_root(year())
-                .join("systemcore")
-                .join(SYSTEMCORE_TARGET)
-                .join("sysroot");
-            let path = if Path::new(SYSTEMCORE_SYSROOT).exists() {
-                Path::new(SYSTEMCORE_SYSROOT).into()
-            } else if user_sysroot.exists() {
-                user_sysroot
-            } else {
-                let gcc_path = which::which(format!("aarch64-bookworm-linux-gnu-gcc"))
-                    .ok()
-                    .expect(EXPECT);
-                let prospective = gcc_path
-                    .parent()
-                    .expect(EXPECT)
-                    .join(format!("../{SYSTEMCORE_TARGET}/sysroot"));
-                prospective
-                    .try_exists()
-                    .ok()
-                    .and_then(|e| e.then_some(prospective))
-                    .expect(EXPECT)
-            };
 
-            Some(Sysroot::new(&path, SYSTEMCORE_TARGET))
+            let mut dirs = Vec::new();
+            if let Some(gcc_path) =
+                which::which(format!("aarch64-systemcore{YEAR}-linux-gnu-gcc")).ok()
+            {
+                dirs.push(gcc_path.parent()?.join("../aarch64-linux-gnu/sysroot"));
+            }
+
+            if let Some(home) = std::env::home_dir() {
+                dirs.push(home.join(format!(
+                    ".gradle/toolchains/first/{YEAR}/systemcore/aarch64-linux-gnu/sysroot"
+                )));
+                dirs.push(get_wpilib_root().join("systemcore/aarch64-linux-gnu/sysroot"));
+            }
+
+            #[cfg(target_os = "linux")]
+            dirs.push("/usr/local/aarch64-linux-gnu/sysroot".into());
+            dirs
         }
         Platform::LinuxArm64 => {
-            const ARM64_SYSROOT: &str = "/usr/local/aarch64-linux-gnu/sysroot";
-            const ARM64_TARGET: &str = "aarch64-linux-gnu";
-            const EXPECT: &str = "Cannot find AArch64 sysroot!";
-            let path = if Path::new(ARM64_SYSROOT).exists() {
-                Path::new(ARM64_SYSROOT).into()
-            } else {
-                let gcc_path = which::which(format!("aarch64-bookworm-linux-gnu-gcc")).ok()?;
-                let prospective = gcc_path
-                    .parent()
-                    .expect(EXPECT)
-                    .join(format!("../{ARM64_TARGET}/sysroot"));
-                prospective
-                    .try_exists()
-                    .ok()
-                    .and_then(|e| e.then_some(prospective))
-                    .expect(EXPECT)
-            };
-            Some(Sysroot::new(&path, ARM64_TARGET))
+            let mut dirs = Vec::new();
+            if let Some(gcc_path) =
+                which::which(format!("aarch64-{DEBIAN_VERSION}-linux-gnu-gcc")).ok()
+            {
+                dirs.push(gcc_path.parent()?.join("../aarch64-linux-gnu/sysroot"));
+            }
+
+            if let Some(home) = std::env::home_dir() {
+                dirs.push(home.join(format!(
+                    ".gradle/toolchains/first/{YEAR}/arm64/aarch64-linux-gnu/sysroot"
+                )));
+            }
+
+            #[cfg(target_os = "linux")]
+            dirs.push("/usr/local/aarch64-linux-gnu/sysroot".into());
+
+            #[cfg(all(target_arch = "aarch64", target_os = "linux", target_env = "gnu"))]
+            dirs.push("/usr/include".into());
+            dirs
         }
-        _ => None,
-    }
+        _ => {
+            return None;
+        }
+    };
+
+    check_dirs
+        .iter()
+        .find_map(|v| v.is_dir().then(|| Sysroot::new(v, "aarch64-linux-gnu")))
 }
 
 fn latest_gcc_version(p: &Path) -> Option<PathBuf> {
@@ -556,11 +568,15 @@ fn latest_gcc_version(p: &Path) -> Option<PathBuf> {
 }
 
 /// The latest supported version.
-pub const LATEST_VERSION: &str = "2027.0.0-alpha-6";
+pub const VERSION: &str = "2027.0.0-alpha-6";
+/// debian version for linkage
+pub const DEBIAN_VERSION: &str = "trixie";
+/// year (number)
+pub const YEAR: u64 = 2027;
 
 /// Gets the year string.
 /// This **will** change in the future.
-pub fn year() -> &'static str {
+pub fn wpilib_year() -> &'static str {
     "2027_alpha5"
 }
 

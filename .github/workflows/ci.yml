@@ -13,10 +13,12 @@ jobs:
             artifact-name: SystemCore
             target: "aarch64-unknown-linux-gnu"
             flags: "--features robot-controller"
+            aarch64-linker: "aarch64-systemcore2027-linux-gnu"
           - container: wpilib/aarch64-cross-debian:trixie
             artifact-name: Arm64
             target: "aarch64-unknown-linux-gnu"
             flags: ""
+            aarch64-linker: "aarch64-trixie-linux-gnu"
           - container: wpilib/systemcore-cross-debian:trixie
             artifact-name: Linux
             target: "x86_64-unknown-linux-gnu"
@@ -38,6 +40,12 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
+      - name: Configure aarch64 linkage
+        if: ${{ matrix.aarch64-linker != '' }}
+        run: |
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=${{ matrix.aarch64-linker }}-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_AR=${{ matrix.aarch64-linker }}-ar" >> $GITHUB_ENV
+
       - name: Attempt to build library
         run: cargo build --target=${{ matrix.target }} -p build-test ${{ matrix.flags }}
       - name: Attempt to run the build-test

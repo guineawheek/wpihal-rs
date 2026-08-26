@@ -24,7 +24,7 @@ pub fn main() {
         wpilib_nativeutils::platform(),
         "org.wpilib.wpiutil",
         "wpiutil-cpp",
-        wpilib_nativeutils::LATEST_VERSION,
+        wpilib_nativeutils::VERSION,
         &buildlibs,
         None,
     )
