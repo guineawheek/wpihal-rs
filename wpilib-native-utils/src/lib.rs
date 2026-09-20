@@ -1,10 +1,12 @@
 //! Utilities for build.rs to download and process mavens and generate bindings.
 
+use core::{num::NonZeroUsize, time::Duration};
 use std::{
     fmt::Display,
     io::Cursor,
     path::{Path, PathBuf},
     sync::LazyLock,
+    thread::JoinHandle,
 };
 
 /// Returns the home directory, or an empty path.
@@ -19,7 +21,8 @@ fn path_var(var: &str) -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// Artifact type
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ArtifactType {
     //Pom,
     Jar,
@@ -28,48 +31,84 @@ pub enum ArtifactType {
     Javadoc,
     Headers,
     Sources,
-    Shared,
-    SharedDebug,
-    SharedOnly,
-    Static,
-    StaticDebug,
+    /// Shared library with name
+    Shared(String),
+    /// Shared library (debug symbols) with name
+    SharedDebug(String),
+    /// Shared library (no debug symbols available)
+    SharedOnly(String),
+    // Static library
+    Static(String),
+    /// Static library (debug symbols)
+    StaticDebug(String),
+    /// Static library (no debug symbols available0
+    StaticOnly(String),
 }
 
 impl ArtifactType {
+    pub fn native(lib_name: &str, shared: bool, debug: bool) -> Self {
+        let lib_name = lib_name.to_string();
+        match (shared, debug) {
+            (true, true) => Self::SharedDebug(lib_name),
+            (true, false) => Self::Shared(lib_name),
+            (false, true) => Self::Static(lib_name),
+            (false, false) => Self::StaticDebug(lib_name),
+        }
+    }
+    /// Suffix for the artifact
     pub fn suffix(&self, platform: &str) -> String {
         match self {
-            //ArtifactType::Pom => ".pom".to_string(),
-            ArtifactType::Jar => ".jar".to_string(),
-            ArtifactType::JarDebug => "debug.jar".to_string(),
-            ArtifactType::JarSources => "sources.jar".to_string(),
-            ArtifactType::Javadoc => "javadoc.jar".to_string(),
-            ArtifactType::Headers => "headers.zip".to_string(),
-            ArtifactType::Sources => "sources.zip".to_string(),
-            ArtifactType::Shared | ArtifactType::SharedOnly => format!("{platform}.zip"),
-            ArtifactType::SharedDebug => format!("{platform}debug.zip"),
-            ArtifactType::Static => format!("{platform}static.zip"),
-            ArtifactType::StaticDebug => format!("{platform}staticdebug.zip"),
+            //Self::Pom => ".pom".to_string(),
+            Self::Jar => ".jar".to_string(),
+            Self::JarDebug => "debug.jar".to_string(),
+            Self::JarSources => "sources.jar".to_string(),
+            Self::Javadoc => "javadoc.jar".to_string(),
+            Self::Headers => "headers.zip".to_string(),
+            Self::Sources => "sources.zip".to_string(),
+            Self::Shared(..) | Self::SharedOnly(..) => format!("{platform}.zip"),
+            Self::SharedDebug(..) => format!("{platform}debug.zip"),
+            Self::Static(..) | Self::StaticOnly(..) => format!("{platform}static.zip"),
+            Self::StaticDebug(..) => format!("{platform}staticdebug.zip"),
         }
     }
-    pub fn debug_release(&self) -> &'static [&'static str] {
+
+    /// Emits a `cargo:rustc-link-lib=` if applicable.
+    pub fn rustc_link_lib(&self) {
         match self {
-            ArtifactType::Shared | ArtifactType::Static => &["release"],
-            ArtifactType::SharedDebug | ArtifactType::StaticDebug => &["debug"],
-            ArtifactType::SharedOnly => &["release", "debug"],
-            _ => &[""],
+            Self::Shared(s) | Self::SharedOnly(s) | Self::Static(s) | Self::StaticOnly(s) => {
+                println!("cargo:rustc-link-lib={s}");
+            }
+            Self::SharedDebug(s) | Self::StaticDebug(s) => {
+                println!("cargo:rustc-link-lib={s}d");
+            }
+
+            _ => {}
         }
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Artifact<'a> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Artifact {
+    pub group_id: String,
+    pub artifact_id: String,
+    pub version: String,
     pub artifact_type: ArtifactType,
-    pub group_id: &'a str,
-    pub artifact_id: &'a str,
-    pub version: &'a str,
 }
 
-impl<'a> Artifact<'a> {
+impl Artifact {
+    pub fn new(
+        group_id: &str,
+        artifact_id: &str,
+        version: &str,
+        artifact_type: ArtifactType,
+    ) -> Self {
+        Self {
+            group_id: group_id.to_string(),
+            artifact_id: artifact_id.to_string(),
+            version: version.to_string(),
+            artifact_type,
+        }
+    }
     pub fn construct_uri(&self, base: &str, platform: Platform) -> String {
         format!(
             "{base}/{group_id}/{artifact_id}/{version}/{artifact_id}-{version}-{suffix}",
@@ -78,6 +117,16 @@ impl<'a> Artifact<'a> {
             version = self.version,
             suffix = self.artifact_type.suffix(platform.platform_string())
         )
+    }
+
+    pub fn name(&self) -> String {
+        format!("{}.{}-{}", self.group_id, self.artifact_id, self.version)
+    }
+
+    pub fn with_headers(self) -> [Self; 2] {
+        let mut headers = self.clone();
+        headers.artifact_type = ArtifactType::Headers;
+        [self, headers]
     }
 }
 
@@ -98,6 +147,7 @@ impl Display for NativeUtilsError {
 impl std::error::Error for NativeUtilsError {}
 
 /// A Maven repository.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MavenRepo(pub String);
 
 impl MavenRepo {
@@ -276,105 +326,134 @@ pub fn download_artifact_zip_to_dir(
     Ok(())
 }
 
-pub fn download_native_library_artifacts(
-    repos: &[MavenRepo],
+pub fn download_artifacts(
     platform: Platform,
-    group_id: &str,
-    artifact_id: &str,
-    version: &str,
-    buildlibs: &Path,
-    artifact_types: Option<&[ArtifactType]>,
+    repos: &[MavenRepo],
+    mut artifacts: impl Iterator<Item = Artifact>,
+    destination: &Path,
 ) -> anyhow::Result<()> {
-    let cache_marker = buildlibs.join(format!(
-        ".nativeutils_downloaded_{group_id}.{artifact_id}-{version}"
-    ));
+    std::fs::create_dir_all(&destination.join("headers"))?;
+    std::fs::create_dir_all(&destination.join(".nativeutils"))?;
+
+    let parallels = std::thread::available_parallelism()
+        .map(NonZeroUsize::get)
+        .unwrap_or(1);
+
+    let mut threads: Vec<JoinHandle<anyhow::Result<()>>> = Vec::new();
+
+    'task_assign: loop {
+        while threads.len() < parallels {
+            let Some(artifact) = artifacts.next() else {
+                break 'task_assign;
+            };
+            artifact.artifact_type.rustc_link_lib();
+            let repos_vec = repos.to_vec();
+            let root = destination.to_path_buf();
+
+            threads.push(std::thread::spawn(move || {
+                download_artifact(platform, repos_vec, root, artifact)
+            }));
+        }
+        for task in threads.extract_if(.., |j| j.is_finished()) {
+            task.join().unwrap()?;
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    for task in threads {
+        task.join().unwrap()?;
+    }
+
+    Ok(())
+}
+
+fn download_artifact(
+    platform: Platform,
+    repos: Vec<MavenRepo>,
+    root: PathBuf,
+    artifact: Artifact,
+) -> anyhow::Result<()> {
+    let name = format!(
+        "{}-{}",
+        artifact.name(),
+        artifact.artifact_type.suffix(platform.platform_string())
+    );
+    let flock = std::fs::File::create(root.join(".nativeutils").join(format!(".lock_{name}")))?;
+    flock.lock()?;
+
+    let cache_marker = root
+        .join(".nativeutils")
+        .join(format!(".downloaded_{name}"));
     if cache_marker.exists() {
         return Ok(());
     } else {
         eprintln!("{} doesn't exist, downloading", cache_marker.display());
     }
 
-    let headers_dir = buildlibs.join("headers");
-    std::fs::create_dir_all(&headers_dir)?;
-
-    // we no longer have ni-libraries so all artifacts have headers now. Yay!
-    download_artifact_zip_to_dir(
-        platform,
-        &headers_dir,
-        repos,
-        &Artifact {
-            artifact_type: ArtifactType::Headers,
-            group_id,
-            artifact_id,
-            version,
-        },
-    )?;
-
-    let artifact_types = artifact_types.unwrap_or(&[
-        ArtifactType::Shared,
-        ArtifactType::SharedDebug,
-        ArtifactType::Static,
-        ArtifactType::StaticDebug,
-    ]);
-
-    for artifact_type in artifact_types.iter().cloned() {
-        for dir_type in artifact_type.debug_release() {
-            let output_dir = buildlibs.join(dir_type);
-            std::fs::create_dir_all(&output_dir)?;
-            download_artifact_zip_to_dir(
-                platform,
-                &output_dir,
-                repos,
-                &Artifact {
-                    artifact_type,
-                    group_id,
-                    artifact_id,
-                    version,
-                },
-            )?;
+    let mut last_err: Option<anyhow::Error> = None;
+    let mut artifact_data: Option<Vec<u8>> = None;
+    for repo in repos {
+        match repo.fetch_artifact(&artifact, platform) {
+            Ok(a) => {
+                artifact_data = Some(a);
+                break;
+            }
+            Err(e) => {
+                last_err = Some(e);
+            }
         }
     }
+    let Some(artifact_data) = artifact_data else {
+        return Err(last_err.expect("no maven repos specified!!!"));
+    };
+    let dest = match artifact.artifact_type {
+        ArtifactType::Headers => root.join("headers"),
+        _ => root,
+    };
+    std::fs::create_dir_all(&dest)?;
+
+    eprintln!("Attempting to extract {} to {}", name, dest.display());
+    let mut zipfile = zip::ZipArchive::new(std::io::Cursor::new(artifact_data))?;
+
+    // we need to aggressively check to ensure that the parent dirs actually exist.
+    // we also directly modify license files to not interfere to begin with.
+    for i in 0..zipfile.len() {
+        let mut file = zipfile.by_index(i)?;
+        let Some(path) = file.enclosed_name() else {
+            continue;
+        };
+        if file.is_dir() {
+            std::fs::create_dir_all(dest.join(&path))?;
+        } else {
+            if let Some(parent) = path.parent() {
+                let parent = dest.join(parent);
+                if !parent.exists() {
+                    std::fs::create_dir_all(parent)?;
+                }
+            }
+            let path = match file.name() {
+                "LICENSE.md" => format!("LICENSE_{name}.md").into(),
+                "ThirdPartyNotices.txt" => format!("ThirdPartyNotices_{name}.txt").into(),
+                _ => path,
+            };
+            std::io::copy(&mut file, &mut std::fs::File::create(&dest.join(path))?)?;
+        }
+    }
+
+    flock.unlock()?;
     std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .open(cache_marker)?;
+
     Ok(())
 }
 
-pub fn lib_search_path(dir: &Path, platform: Platform, shared: bool, debug: bool) -> PathBuf {
-    let mut path = PathBuf::from(dir);
-    path.push(if debug { "debug" } else { "release" });
-
-    path.push(platform.operating_system());
-    path.push(platform.architecture());
-    if shared {
-        path.push("shared");
-    } else {
-        path.push("static");
-    }
-    path
-}
-
-pub fn rustc_link_search(dir: &Path, platform: Platform, shared: bool, debug: bool) {
-    println!(
-        "cargo:rustc-link-search={}",
-        stringify_path(&lib_search_path(dir, platform, shared, debug))
-    )
-}
-
-//pub fn header_search_path(dir: &Path) -> PathBuf {
-//    dir.join("headers")
-//}
-
-/// Select `rustc-link-lib` depending on our debug/release compilation profile
-pub fn rustc_debug_switch(libs: &[&str], debug: bool) {
-    for lib in libs {
-        if debug {
-            println!("cargo:rustc-link-lib={lib}d");
-        } else {
-            println!("cargo:rustc-link-lib={lib}");
-        }
-    }
+pub fn rustc_link_search(dir: &Path, platform: Platform, shared: bool) {
+    let path = dir
+        .join(platform.operating_system())
+        .join(platform.architecture())
+        .join(if shared { "shared" } else { "static" });
+    println!("cargo:rustc-link-search={}", stringify_path(&path))
 }
 
 pub fn stringify_path(path: &Path) -> String {
@@ -384,7 +463,8 @@ pub fn stringify_path(path: &Path) -> String {
     let s = canon.to_str().expect(PLEASE_USE_UTF8);
     #[cfg(windows)]
     {
-        // on windows, canonicalize() adds the _absolute_ absolute path with a \\?\ prefix, but this breaks downstream tooling.
+        // on windows, canonicalize() adds the _absolute_ absolute path with a \\?\ prefix, but this breaks MSVC because
+        // MSVC is borderline unmaintained.
         // downside, of course, is the 255 character limit.
         s.strip_prefix(r"\\?\").unwrap_or(s).to_string()
     }
@@ -687,6 +767,15 @@ impl WPILibVersion {
         let wpilib_root_string = wpilib_maven_root.to_string_lossy().to_string();
 
         MavenRepo(format!("file:/{wpilib_root_string}"))
+    }
+
+    /// Gets the usual local/installed/remote Mavens
+    pub fn get_mavens(&self, release_train: ReleaseTrain) -> Vec<MavenRepo> {
+        vec![
+            get_local_maven(release_train),
+            self.get_wpilib_maven(),
+            self.get_remote_maven(release_train),
+        ]
     }
 }
 

@@ -1,34 +1,35 @@
 use bindgen::{RustTarget, callbacks::ParseCallbacks};
-use wpilib_native_utils::{ReleaseTrain, WPILibVersion};
+use wpilib_native_utils::{Artifact, ArtifactType, ReleaseTrain, WPILibVersion};
 
 pub fn main() {
     let wpilib_version = wpilib_native_utils::bind_version();
-    let local_maven = wpilib_native_utils::get_local_maven(ReleaseTrain::Release);
-    let wpilib_maven = wpilib_version.get_wpilib_maven();
-    let remote_maven = wpilib_version.get_remote_maven(ReleaseTrain::Release);
-    let repos = [local_maven, wpilib_maven, remote_maven];
+    let repos = wpilib_version.get_mavens(ReleaseTrain::Release);
     let buildlibs = wpilib_native_utils::out_dir().join("buildlibs");
 
-    wpilib_native_utils::download_native_library_artifacts(
-        &repos,
-        wpilib_native_utils::platform(),
+    let version = wpilib_version.to_string();
+    let shared = std::env::var("CARGO_FEATURE_SHARED").is_ok();
+    let debug = wpilib_native_utils::is_debug();
+    let platform = wpilib_native_utils::platform();
+
+    let artifacts = [Artifact::new(
         "org.wpilib.wpiutil",
         "wpiutil-cpp",
-        &wpilib_version.to_string(),
+        &version,
+        ArtifactType::native("wpiutil", shared, debug),
+    )
+    .with_headers()];
+
+    wpilib_native_utils::download_artifacts(
+        platform,
+        &repos,
+        artifacts.into_iter().flatten(),
         &buildlibs,
-        None,
     )
     .unwrap();
 
     println!("cargo:rerun-if-changed=UtilsInclude.h");
-    wpilib_native_utils::rustc_link_search(
-        &buildlibs,
-        wpilib_native_utils::platform(),
-        std::env::var("CARGO_FEATURE_SHARED").is_ok(),
-        wpilib_native_utils::is_debug(),
-    );
-    wpilib_native_utils::rustc_debug_switch(&["wpiutil"], wpilib_native_utils::is_debug());
-    generate_bindings_for_header(&&wpilib_version, bindgen::Builder::default(), "bindings.rs");
+    wpilib_native_utils::rustc_link_search(&buildlibs, platform, shared);
+    generate_bindings_for_header(&wpilib_version, bindgen::Builder::default(), "bindings.rs");
 }
 
 fn generate_bindings_for_header(

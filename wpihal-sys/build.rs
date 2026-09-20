@@ -15,87 +15,58 @@ use wpilib_native_utils::{
 
 pub fn main() {
     let wpilib_version = wpilib_native_utils::bind_version();
-    let local_maven = wpilib_native_utils::get_local_maven(ReleaseTrain::Release);
-    let wpilib_maven = wpilib_version.get_wpilib_maven();
-    let remote_maven = wpilib_version.get_remote_maven(ReleaseTrain::Release);
-    let repos = [local_maven, wpilib_maven, remote_maven];
+    let repos = wpilib_version.get_mavens(ReleaseTrain::Release);
     let buildlibs = wpilib_native_utils::out_dir().join("buildlibs");
-    let headers = buildlibs.join("headers");
 
     let version = wpilib_version.to_string();
+    let shared = std::env::var("CARGO_FEATURE_SHARED").is_ok();
+    let debug = wpilib_native_utils::is_debug();
+    let platform = wpilib_native_utils::platform();
 
-    wpilib_native_utils::download_native_library_artifacts(
-        &repos,
-        wpilib_native_utils::platform(),
-        "org.wpilib.hal",
-        "hal-cpp",
-        &version,
-        &buildlibs,
-        None,
-    )
-    .unwrap();
-    wpilib_native_utils::download_native_library_artifacts(
-        &repos,
-        wpilib_native_utils::platform(),
-        "org.wpilib.wpiutil",
-        "wpiutil-cpp",
-        &version,
-        &buildlibs,
-        None,
-    )
-    .unwrap();
-    wpilib_native_utils::download_native_library_artifacts(
-        &repos,
-        wpilib_native_utils::platform(),
-        "org.wpilib.ntcore",
-        "ntcore-cpp",
-        &version,
-        &buildlibs,
-        None,
-    )
-    .unwrap();
-    wpilib_native_utils::download_native_library_artifacts(
-        &repos,
-        wpilib_native_utils::platform(),
-        "org.wpilib.datalog",
-        "datalog-cpp",
-        &version,
-        &buildlibs,
-        None,
-    )
-    .unwrap();
-    wpilib_native_utils::download_native_library_artifacts(
-        &repos,
-        wpilib_native_utils::platform(),
-        "org.wpilib.wpinet",
-        "wpinet-cpp",
-        &version,
-        &buildlibs,
-        None,
-    )
-    .unwrap();
-    wpilib_native_utils::download_native_library_artifacts(
-        &repos,
-        wpilib_native_utils::platform(),
-        "org.wpilib.mrclib",
-        "mrclib-cpp",
-        "2027.1.0-alpha-1-116-g5288562",
-        &buildlibs,
-        Some(&[ArtifactType::SharedOnly]),
-    )
-    .unwrap();
-    println!("cargo:rustc-link-lib=MrcLib");
-    println!("cargo:rerun-if-changed=shim");
-    wpilib_native_utils::rustc_link_search(
-        &buildlibs,
-        wpilib_native_utils::platform(),
-        std::env::var("CARGO_FEATURE_SHARED").is_ok(),
-        wpilib_native_utils::is_debug(),
-    );
-    wpilib_native_utils::rustc_debug_switch(
-        &["wpiHal", "wpiutil", "ntcore", "datalog", "wpinet"],
-        wpilib_native_utils::is_debug(),
-    );
+    let artifacts = [
+        Artifact::new(
+            "org.wpilib.hal",
+            "hal-cpp",
+            &version,
+            ArtifactType::native("wpiHal", shared, debug),
+        ),
+        Artifact::new(
+            "org.wpilib.wpiutil",
+            "wpiutil-cpp",
+            &version,
+            ArtifactType::native("wpiutil", shared, debug),
+        ),
+        Artifact::new(
+            "org.wpilib.ntcore",
+            "ntcore-cpp",
+            &version,
+            ArtifactType::native("ntcore", shared, debug),
+        ),
+        Artifact::new(
+            "org.wpilib.datalog",
+            "datalog-cpp",
+            &version,
+            ArtifactType::native("datalog", shared, debug),
+        ),
+        Artifact::new(
+            "org.wpilib.wpinet",
+            "wpinet-cpp",
+            &version,
+            ArtifactType::native("wpinet", shared, debug),
+        ),
+        Artifact::new(
+            "org.wpilib.mrclib",
+            "mrclib-cpp",
+            "2027.1.0-alpha-1-116-g5288562",
+            ArtifactType::SharedOnly("MrcLib".to_string()),
+        ),
+    ]
+    .into_iter()
+    .map(|a| a.with_headers())
+    .flatten();
+
+    wpilib_native_utils::download_artifacts(platform, &repos, artifacts, &buildlibs).unwrap();
+    wpilib_native_utils::rustc_link_search(&buildlibs, platform, shared);
     generate_bindings_for_header(
         &wpilib_version,
         bindgen::Builder::default(),
@@ -103,11 +74,12 @@ pub fn main() {
         r"(HAL_|HALSIM_|_HALShim_)\w+",
         "hal_bindings.rs",
     );
+    println!("cargo:rerun-if-changed=shim");
     cc::Build::new()
         .cpp(true)
         .file("shim/HALShim.cpp")
-        .std("c++20")
-        .include(wpilib_native_utils::fix_windows(&headers))
+        .std("c++23")
+        .include(wpilib_native_utils::fix_windows(&buildlibs.join("headers")))
         .compile("HALShim");
 }
 
@@ -123,7 +95,7 @@ fn generate_bindings_for_header(
     let mut clang_args = vec![
         format!("--target={}", std::env::var("TARGET").unwrap()), // See: https://github.com/rust-lang/rust-bindgen/issues/1760
         "-xc++".to_string(),
-        "-std=c++20".to_string(),
+        "-std=c++23".to_string(),
         "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH".to_string(),
     ];
     wpilib_native_utils::add_sysroot_to_clang_args(

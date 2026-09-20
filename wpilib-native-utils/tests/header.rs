@@ -22,9 +22,9 @@ fn download_header() {
         &repos,
         &Artifact {
             artifact_type: ArtifactType::Headers,
-            group_id: "org.wpilib.hal",
-            artifact_id: "hal-cpp",
-            version: &version.to_string(),
+            group_id: "org.wpilib.hal".to_string(),
+            artifact_id: "hal-cpp".to_string(),
+            version: version.to_string(),
         },
     )
     .unwrap();
