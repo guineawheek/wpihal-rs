@@ -9,16 +9,15 @@ use wpihal_sys::{
     HAL_GetMonotonicTime, HAL_GetRSLState, HAL_GetRuntimeType, HAL_GetSerialNumber,
     HAL_GetSystemActive, HAL_GetSystemTimeValid, HAL_GetTeamNumber, HAL_Initialize,
     HAL_RuntimeType, HAL_Shutdown, HAL_SimPeriodicAfter, HAL_SimPeriodicBefore,
+    HAL_WriteDisplayAnsi,
 };
-use wpiutil::wpistring::WPIString;
+use wpiutil::{WPIStringRef, wpistring::WPIString};
 
 /// this is the higher level package
 /// i guess
 
 /// addressable ws2812 leds
 pub mod addressable_led;
-/// alerts
-pub mod alert;
 /// analog input
 pub mod analog_input;
 /// can bus
@@ -183,12 +182,12 @@ pub fn get_comms_disable_count() -> HALResult<i32> {
     hal_call!(HAL_GetCommsDisableCount())
 }
 
-pub fn get_monotonic_time() -> u64 {
+pub fn get_monotonic_time() -> i64 {
     unsafe { HAL_GetMonotonicTime() }
 }
 
 pub fn get_monotonic_duration() -> Duration {
-    Duration::from_micros(get_monotonic_time())
+    Duration::from_nanos(get_monotonic_time() as u64)
 }
 
 pub fn get_rsl_state() -> HALResult<bool> {
@@ -199,23 +198,8 @@ pub fn get_system_time_valid() -> HALResult<bool> {
     hal_call!(HAL_GetSystemTimeValid()).map(hal_bool)
 }
 
-#[repr(i32)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum HALInitializationMode {
-    /// Try to kill an existing HAL from another program, if not successful, error
-    TryKillExisting = 0,
-    /// Force kill a HAL from another program.
-    ForceKillExisting = 1,
-    /// Just warn if another HAL exists and cannot be killed. Will likely result in undefined behavior.
-    WarnIfExisting = 2,
-}
-
-pub fn initialize(timeout: i32, mode: HALInitializationMode) -> bool {
-    unsafe { HAL_Initialize(timeout, mode as i32) != 0 }
-}
-
-pub fn initialize_common() -> bool {
-    unsafe { HAL_Initialize(500, 0) != 0 }
+pub fn initialize() -> bool {
+    unsafe { HAL_Initialize() != 0 }
 }
 
 pub fn shutdown() {
@@ -233,6 +217,15 @@ pub fn sim_periodic_before() {
 pub fn sim_periodic_after() {
     unsafe {
         HAL_SimPeriodicAfter();
+    }
+}
+
+/// Write ANSI text to the display.
+///
+/// Likely used for dedicated driver station consoles.
+pub fn write_display_ansi(line: &str) {
+    unsafe {
+        HAL_WriteDisplayAnsi(WPIStringRef::from(line).as_ref());
     }
 }
 

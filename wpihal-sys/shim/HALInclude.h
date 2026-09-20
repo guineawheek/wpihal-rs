@@ -2,23 +2,21 @@
 
 #include "wpi/hal/AddressableLED.h"
 #include "wpi/hal/AddressableLEDTypes.h"
-#include "wpi/hal/Alert.h"
 #include "wpi/hal/AnalogInput.h"
 
 #include "wpi/hal/CAN.h"
 #include "wpi/hal/CANAPI.h"
 #include "wpi/hal/CANAPITypes.h"
-#include "wpi/hal/CANBusMap.h"
 
 #include "wpi/hal/Counter.h"
 #include "wpi/hal/CTREPCM.h"
-// DashboardOpMode.hpp is part of the HALSHim
+// DashboardOpMode.hpp is part of the HALShim
 #include "wpi/hal/DIO.h"
 #include "wpi/hal/DriverStation.h"
 #include "wpi/hal/DriverStationTypes.h"
 #include "wpi/hal/DutyCycle.h"
 #include "wpi/hal/Encoder.h"
-// ErrorHandling.hpp
+// ErrorHandling.hpp is primarily for C++
 #include "wpi/hal/Errors.h"
 #include "wpi/hal/Extensions.h"
 #include "wpi/hal/HAL.h"
@@ -49,7 +47,6 @@
 
 // simulation
 #include "wpi/hal/simulation/AddressableLEDData.h"
-#include "wpi/hal/simulation/AlertData.h"
 #include "wpi/hal/simulation/AnalogInData.h"
 #include "wpi/hal/simulation/CanData.h"
 #include "wpi/hal/simulation/CTREPCMData.h"

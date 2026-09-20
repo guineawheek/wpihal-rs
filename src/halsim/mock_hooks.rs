@@ -10,9 +10,9 @@ pub fn set_runtime_type(runtime_type: HAL_RuntimeType) {
 }
 
 /// waits for program start
-pub fn wait_for_program_start() {
+pub fn wait_for_program_start(wait_for_first_notifier: bool) {
     unsafe {
-        wpihal_sys::HALSIM_WaitForProgramStart();
+        wpihal_sys::HALSIM_WaitForProgramStart(wait_for_first_notifier as _);
     }
 }
 
@@ -61,13 +61,15 @@ pub fn is_timing_paused() -> bool {
     unsafe { wpihal_sys::HALSIM_IsTimingPaused() != 0 }
 }
 
-pub fn step_timing(delta: u64) {
+/// Takes nanoseconds
+pub fn step_timing(delta: i64) {
     unsafe {
         wpihal_sys::HALSIM_StepTiming(delta);
     }
 }
 
-pub fn step_timing_async(delta: u64) {
+/// Takes nanoseconds
+pub fn step_timing_async(delta: i64) {
     unsafe {
         wpihal_sys::HALSIM_StepTimingAsync(delta);
     }

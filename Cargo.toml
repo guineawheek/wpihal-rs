@@ -1,4 +1,5 @@
 [workspace]
+
 members = [
     "wpilib-native-utils", 
     "wpihal-sys",
@@ -6,9 +7,10 @@ members = [
     "wpiutil-sys",
     "build-test",
 ]
+
 # this should be YEARXX.Y.Z+wpilib-target
 # To bump the wpilib dep, edit it in wpilib-native-utils
-package.version = "1.0.0-2027.0.0-alpha-6"
+package.version = "2.0.0-2027.0.0-alpha-7"
 package.license = "MIT OR Apache-2.0"
 package.authors = ["guineawheek"]
 package.homepage = "https://github.com/guineawheek/wpihal-rs"
@@ -45,10 +47,10 @@ paste.workspace = true
 embedded-hal.workspace = true
 
 [workspace.dependencies]
-wpiutil = { version = "1.0.0-2027.0.0-alpha-6", path = "./wpiutil" }
-wpilib-native-utils = { version = "1.0.0", path = "./wpilib-native-utils" }
-wpiutil-sys = { version = "1.0.0", path = "./wpiutil-sys" }
-wpihal-sys = { version = "1.0.0", path = "./wpihal-sys" }
+wpiutil = { version = "2.0.0-2027.0.0-alpha-7", path = "./wpiutil" }
+wpilib-native-utils = { version = "1.1.0", path = "./wpilib-native-utils" }
+wpiutil-sys = { version = "2.0.0", path = "./wpiutil-sys" }
+wpihal-sys = { version = "2.0.0", path = "./wpihal-sys" }
 
 paste = "1"
 anyhow = "1"

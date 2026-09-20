@@ -1,9 +1,9 @@
 use std::ffi::CStr;
 
 use wpihal_sys::{
-    HAL_CounterHandle, HAL_FreeCounter, HAL_GetCounter, HAL_GetCounterPeriod,
-    HAL_GetCounterStopped, HAL_InitializeCounter, HAL_ResetCounter,
-    HAL_SetCounterEdgeConfiguration, HAL_SetCounterMaxPeriod,
+    HAL_CounterHandle, HAL_FreeCounter, HAL_GetCounter, HAL_GetCounterRate, HAL_GetCounterStopped,
+    HAL_InitializeCounter, HAL_ResetCounter, HAL_SetCounterEdgeConfiguration,
+    HAL_SetCounterRateWindow,
 };
 
 use crate::{
@@ -41,6 +41,10 @@ impl Counter {
         ))
     }
 
+    pub fn set_rate_window(&mut self, window_ms: i32) -> HALResult<()> {
+        hal_call!(HAL_SetCounterRateWindow(self.handle, window_ms))
+    }
+
     pub fn reset(&mut self) -> HALResult<()> {
         hal_call!(HAL_ResetCounter(self.handle))
     }
@@ -49,12 +53,8 @@ impl Counter {
         hal_call!(HAL_GetCounter(self.handle))
     }
 
-    pub fn get_period(&self) -> HALResult<f64> {
-        hal_call!(HAL_GetCounterPeriod(self.handle))
-    }
-
-    pub fn set_max_period(&mut self, max_period: f64) -> HALResult<()> {
-        hal_call!(HAL_SetCounterMaxPeriod(self.handle, max_period))
+    pub fn get_rate(&self) -> HALResult<f64> {
+        hal_call!(HAL_GetCounterRate(self.handle))
     }
 
     pub fn get_stopped(&self) -> HALResult<bool> {

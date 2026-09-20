@@ -1,4 +1,4 @@
 fn main() {
-    wpihal::initialize_common();
+    wpihal::initialize();
     println!("Hello, world!");
 }

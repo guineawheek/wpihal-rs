@@ -82,7 +82,6 @@ Actual achievements of these aims is not certain and there are almost certainly 
 * Opmode support
   * ID generation not implemented
 * Finish the halsim simdevice hooks (no motivation)
-* Dealing with wpilib install locations moving
 * Proc-macros for defining HAL enum impls and `HALSIM_InitExtension` 
 * More parallelization in artifact unzipping
 * Verify maven hashes

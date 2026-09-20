@@ -19,15 +19,15 @@ impl Notifier {
 
     pub fn set_alarm(
         &mut self,
-        time_us: u64,
-        interval_us: u64,
+        time_ns: i64,
+        interval_ns: i64,
         absolute: bool,
         ack: bool,
     ) -> HALResult<()> {
         hal_call!(HAL_SetNotifierAlarm(
             self.0,
-            time_us,
-            interval_us,
+            time_ns,
+            interval_ns,
             absolute as _,
             ack as _
         ))

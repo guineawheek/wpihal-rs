@@ -1,7 +1,7 @@
 use wpihal_sys::{
-    HAL_GetBrownoutVoltage, HAL_GetCPUTemp, HAL_GetUserActive3V3, HAL_GetUserCurrent3V3,
-    HAL_GetUserCurrentFaults3V3, HAL_GetUserVoltage3V3, HAL_GetVinVoltage,
-    HAL_ResetUserCurrentFaults, HAL_SetBrownoutVoltage, HAL_SetUserRailEnabled3V3,
+    HAL_GetCPUTemp, HAL_GetUserActive3V3, HAL_GetUserCurrent3V3, HAL_GetUserCurrentFaults3V3,
+    HAL_GetUserVoltage3V3, HAL_GetVinVoltage, HAL_ResetUserCurrentFaults, HAL_SetBrownoutVoltages,
+    HAL_SetUserRailEnabled3V3,
 };
 
 use crate::{error::HALResult, hal_bool, hal_call};
@@ -34,12 +34,8 @@ pub fn reset_user_current_faults() -> HALResult<()> {
     hal_call!(HAL_ResetUserCurrentFaults())
 }
 
-pub fn get_brownout_voltage() -> HALResult<f64> {
-    hal_call!(HAL_GetBrownoutVoltage())
-}
-
-pub fn set_brownout_voltage(voltage: f64) -> HALResult<()> {
-    hal_call!(HAL_SetBrownoutVoltage(voltage))
+pub fn set_brownout_voltages(brownout_voltage: f64, recovery_voltage: f64) -> HALResult<()> {
+    hal_call!(HAL_SetBrownoutVoltages(brownout_voltage, recovery_voltage))
 }
 
 pub fn get_cpu_temp() -> HALResult<f64> {

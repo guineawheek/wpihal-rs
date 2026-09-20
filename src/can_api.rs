@@ -19,10 +19,11 @@ pub struct CANMessage {
     length: u8,
     data: [u8; 64],
     api_id: u16,
-    timestamp: Option<u64>,
+    timestamp: Option<i64>,
 }
 
 impl CANMessage {
+    /// Constructor.
     pub fn new(data: &[u8], api_id: u16, brs: bool, fd: bool) -> Self {
         let length = data.len().min(64);
         let mut data_buf = [0u8; 64];
@@ -44,30 +45,37 @@ impl CANMessage {
         }
     }
 
+    /// Valid data
     pub fn data(&self) -> &[u8] {
         &self.data[..self.length as usize]
     }
 
+    /// Length
     pub fn length(&self) -> u8 {
         self.length
     }
 
+    /// FRC-CAN API ID
     pub fn api_id(&self) -> u16 {
         self.api_id
     }
 
-    pub fn timestamp(&self) -> Option<u64> {
+    /// Timestamp (nanos)
+    pub fn timestamp(&self) -> Option<i64> {
         self.timestamp
     }
 
+    /// Bitrate switching enabled
     pub fn brs(&self) -> bool {
         self.flags | HAL_CANFlags::FdBitrateswitch as i32 != 0
     }
 
+    /// CAN-FD enabled
     pub fn fd(&self) -> bool {
         self.flags | HAL_CANFlags::FdDatalength as i32 != 0
     }
 
+    /// Const-cast to HAL message
     pub const fn as_hal_canmessage(&self) -> HAL_CANMessage {
         HAL_CANMessage {
             flags: self.flags,
@@ -76,6 +84,7 @@ impl CANMessage {
         }
     }
 
+    /// Const-cast from HAL received message
     pub const fn from_hal_recv_message(api_id: u16, value: &HAL_CANReceiveMessage) -> Self {
         Self {
             flags: value.message.flags,

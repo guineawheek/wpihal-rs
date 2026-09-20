@@ -1,6 +1,6 @@
 [package]
 name = "wpiutil-sys"
-version = "1.0.0+wpilib-2027.0.0-alpha-6"
+version = "2.0.0+wpilib-2027.0.0-alpha-7"
 license.workspace = true
 authors.workspace = true
 homepage.workspace = true

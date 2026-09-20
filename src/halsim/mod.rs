@@ -1,5 +1,4 @@
 pub mod addressable_led;
-pub mod alert;
 pub mod analog_in;
 pub mod can;
 pub mod ctre_pcm;

@@ -56,17 +56,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - os: windows-2025-vs2026
             artifact-name: WinX64
-            architecture: x64
             flags: ""
-          - os: windows-latest
+          - os: windows-11-arm
             artifact-name: WinArm64
-            architecture: aarch64
             flags: ""
           - os: macos-26
             artifact-name: macOS
-            architecture: aarch64
             flags: ""
     name: "Build - ${{ matrix.artifact-name }}"
     runs-on: ${{ matrix.os }}

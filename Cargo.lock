@@ -1010,7 +1010,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "wpihal"
-version = "1.0.0-2027.0.0-alpha-6"
+version = "2.0.0-2027.0.0-alpha-7"
 dependencies = [
  "embedded-hal",
  "paste",
@@ -1020,7 +1020,7 @@ dependencies = [
 
 [[package]]
 name = "wpihal-sys"
-version = "1.0.0+wpilib-2027.0.0-alpha-6"
+version = "2.0.0+wpilib-2027.0.0-alpha-7"
 dependencies = [
  "bindgen",
  "cc",
@@ -1032,7 +1032,7 @@ dependencies = [
 
 [[package]]
 name = "wpilib-native-utils"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "ureq",
@@ -1042,14 +1042,14 @@ dependencies = [
 
 [[package]]
 name = "wpiutil"
-version = "1.0.0-2027.0.0-alpha-6"
+version = "2.0.0-2027.0.0-alpha-7"
 dependencies = [
  "wpiutil-sys",
 ]
 
 [[package]]
 name = "wpiutil-sys"
-version = "1.0.0+wpilib-2027.0.0-alpha-6"
+version = "2.0.0+wpilib-2027.0.0-alpha-7"
 dependencies = [
  "bindgen",
  "regex",

@@ -2,7 +2,7 @@ use std::{ffi::CStr, mem::MaybeUninit};
 
 use wpihal_sys::{HAL_NotifierHandle, HALSIM_GetNotifierInfo, HALSIM_NotifierInfo};
 
-pub fn get_next_notifier_timeout() -> u64 {
+pub fn get_next_notifier_timeout() -> i64 {
     unsafe { wpihal_sys::HALSIM_GetNextNotifierTimeout() }
 }
 
@@ -10,7 +10,6 @@ pub fn get_num_notifiers() -> usize {
     unsafe { wpihal_sys::HALSIM_GetNumNotifiers().max(0) as usize }
 }
 
-#[derive(Debug)]
 #[repr(transparent)]
 pub struct NotifierInfo(HALSIM_NotifierInfo);
 impl NotifierInfo {
@@ -45,11 +44,11 @@ impl NotifierInfo {
         }
     }
 
-    pub const fn alarm_time(&self) -> u64 {
+    pub const fn alarm_time(&self) -> i64 {
         self.0.alarmTime
     }
 
-    pub const fn interval_time(&self) -> u64 {
+    pub const fn interval_time(&self) -> i64 {
         self.0.intervalTime
     }
 

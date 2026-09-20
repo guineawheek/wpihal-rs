@@ -132,7 +132,7 @@ impl Joystick {
     }
 }
 
-const GAME_DATA_LEN: usize = 9;
+const GAME_DATA_LEN: usize = 65;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct GameData([u8; GAME_DATA_LEN]);

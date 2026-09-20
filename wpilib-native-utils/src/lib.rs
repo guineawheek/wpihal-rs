@@ -7,6 +7,18 @@ use std::{
     sync::LazyLock,
 };
 
+/// Returns the home directory, or an empty path.
+fn home_dir() -> PathBuf {
+    std::env::home_dir().unwrap_or_default()
+}
+
+/// Checks a path variable. Will return [`None`] if undefined or empty.
+fn path_var(var: &str) -> Option<PathBuf> {
+    std::env::var_os(var)
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ArtifactType {
     //Pom,
@@ -204,15 +216,15 @@ pub enum ReleaseTrain {
 }
 
 pub fn get_local_maven(release_train: ReleaseTrain) -> MavenRepo {
-    let user_home = std::env::home_dir()
-        .unwrap_or_default()
-        .display()
-        .to_string();
     match release_train {
-        ReleaseTrain::Development => {
-            MavenRepo(format!("file:{user_home}/releases/maven/development"))
-        }
-        ReleaseTrain::Release => MavenRepo(format!("file:{user_home}/releases/maven/release")),
+        ReleaseTrain::Development => MavenRepo(format!(
+            "file:{}/releases/maven/development",
+            home_dir().display()
+        )),
+        ReleaseTrain::Release => MavenRepo(format!(
+            "file:{}/releases/maven/release",
+            home_dir().display()
+        )),
     }
 }
 
@@ -613,7 +625,11 @@ impl WPILibVersion {
 
     /// Gets the remote WPILib maven.
     pub fn get_remote_maven(&self, release_train: ReleaseTrain) -> MavenRepo {
-        let trailer = if self.year == 2027 && self.pre_release.is_some() {
+        let trailer = if self.year == 2027
+            && matches!(
+                self.pre_release.as_ref().map(|v| v.as_ref()),
+                Some("alpha-1" | "alpha-2" | "alpha-5" | "alpha-6")
+            ) {
             "-2027"
         } else {
             ""
@@ -626,38 +642,37 @@ impl WPILibVersion {
         }
     }
 
-    fn wpilib_year(&self) -> String {
-        match (
+    /// Gets the WPILib install root.
+    ///
+    /// This is platform-varying, and handles the 2027 rearrangement.
+    pub fn get_wpilib_root(&self) -> PathBuf {
+        let (year, legacy_location) = match (
             self.year,
             self.minor,
             self.patch,
             self.pre_release.as_deref(),
         ) {
-            (2027, 0, 0, Some("alpha-1") | Some("alpha-2")) => "2027_alpha1".to_string(),
-            (2027, 0, 0, Some("alpha-5") | Some("alpha-6")) => "2027_alpha5".to_string(),
-            (2027, 0, 0, Some(..)) => panic!("Current 2027 alpha is not supported (yet)"),
-            (2027, 0, 0, None) => "2027".to_string(),
-            (year, ..) => year.to_string(),
-        }
-    }
+            (2027, 0, 0, Some("alpha-1") | Some("alpha-2")) => ("2027_alpha1".to_string(), true),
+            (2027, 0, 0, Some("alpha-5") | Some("alpha-6")) => ("2027_alpha5".to_string(), true),
+            (2027, 0, 0, Some("alpha-7")) => ("2027_alpha7".to_string(), false),
+            (2027, 0, 0, Some(..)) => panic!("Current 2027 alpha/beta is not supported (yet)"),
+            (year, ..) if year < 2027 => (year.to_string(), true),
+            (year, ..) => (year.to_string(), false),
+        };
 
-    /// Gets the WPILib install root.
-    ///
-    /// This is platform-varying.
-    pub fn get_wpilib_root(&self) -> PathBuf {
-        #[cfg(target_os = "windows")]
-        {
-            let public_folder =
-                std::env::var_os("PUBLIC").unwrap_or(std::ffi::OsString::from("C:\\Users\\Public"));
-            Path::new(&public_folder)
-                .join("wpilib")
-                .join(self.wpilib_year())
+        match (std::env::consts::OS, legacy_location) {
+            ("windows", _) => path_var("PUBLIC")
+                .unwrap_or_else(|| PathBuf::from("C:\\Users\\Public"))
+                .join("wpilib"),
+            (_, true) => home_dir().join("wpilib"),
+            ("macos", false) => home_dir().join(".wpilib"),
+            ("linux", false) => path_var("XDG_DATA_HOME")
+                .unwrap_or_else(|| home_dir().join(".local/share"))
+                .join("wpilib"),
+
+            (unsupported, _) => panic!("This platform ({unsupported}) does not support WPILib."),
         }
-        #[cfg(not(target_os = "windows"))]
-        {
-            let containing_dir = std::env::home_dir().unwrap_or_default();
-            containing_dir.join("wpilib").join(self.wpilib_year())
-        }
+        .join(year)
     }
 
     /// Gets the WPILib maven install root.
