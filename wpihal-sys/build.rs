@@ -24,11 +24,6 @@ pub fn main() {
 
     let version = wpilib_version.to_string();
 
-    let cache_marker = buildlibs.join(format!(
-        ".nativeutils_downloaded_org.wpilib.hal.hal-cpp-{version}"
-    ));
-    let generate_usage_reporting = !cache_marker.exists();
-
     wpilib_native_utils::download_native_library_artifacts(
         &repos,
         wpilib_native_utils::platform(),
@@ -79,6 +74,17 @@ pub fn main() {
         None,
     )
     .unwrap();
+    wpilib_native_utils::download_native_library_artifacts(
+        &repos,
+        wpilib_native_utils::platform(),
+        "org.wpilib.mrclib",
+        "mrclib-cpp",
+        "2027.1.0-alpha-1-116-g5288562",
+        &buildlibs,
+        Some(&[ArtifactType::SharedOnly]),
+    )
+    .unwrap();
+    println!("cargo:rustc-link-lib=MrcLib");
     println!("cargo:rerun-if-changed=shim");
     wpilib_native_utils::rustc_link_search(
         &buildlibs,

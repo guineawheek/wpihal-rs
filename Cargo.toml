@@ -31,7 +31,7 @@ authors.workspace = true
 edition = "2024"
 
 [features]
-default = ["shared", "robot-controller"]
+default = ["shared"]
 # Link against the shared artifacts.
 shared = ["wpihal-sys/shared", "wpiutil/shared"]
 # Link against the artifacts relevant for the robot controller, rather than the generic
@@ -40,17 +40,17 @@ shared = ["wpihal-sys/shared", "wpiutil/shared"]
 robot-controller = ["wpihal-sys/robot-controller", "wpiutil/robot-controller"]
 
 [dependencies]
-wpihal-sys.workspace = true
-wpiutil.workspace = true
+wpihal-sys = { workspace = true, default-features = false }
+wpiutil = { workspace = true, default-features = false }
 
 paste.workspace = true
 embedded-hal.workspace = true
 
 [workspace.dependencies]
-wpiutil = { version = "2.0.0-2027.0.0-alpha-7", path = "./wpiutil" }
-wpilib-native-utils = { version = "1.1.0", path = "./wpilib-native-utils" }
-wpiutil-sys = { version = "2.0.0", path = "./wpiutil-sys" }
-wpihal-sys = { version = "2.0.0", path = "./wpihal-sys" }
+wpiutil = { version = "2.0.0-2027.0.0-alpha-7", path = "./wpiutil", default-features = false }
+wpilib-native-utils = { version = "2.0.0", path = "./wpilib-native-utils" }
+wpiutil-sys = { version = "2.0.0", path = "./wpiutil-sys", default-features = false }
+wpihal-sys = { version = "2.0.0", path = "./wpihal-sys", default-features = false }
 
 paste = "1"
 anyhow = "1"

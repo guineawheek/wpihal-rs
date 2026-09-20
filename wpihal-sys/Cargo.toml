@@ -11,7 +11,7 @@ categories = ["external-ffi-bindings", "science::robotics", "hardware-support"]
 edition = "2024"
 
 [features]
-default = ["shared", "robot-controller"]
+default = ["shared"]
 shared = ["wpiutil-sys/shared"]
 robot-controller = ["wpiutil-sys/robot-controller"]
 

@@ -30,6 +30,7 @@ pub enum ArtifactType {
     Sources,
     Shared,
     SharedDebug,
+    SharedOnly,
     Static,
     StaticDebug,
 }
@@ -44,17 +45,18 @@ impl ArtifactType {
             ArtifactType::Javadoc => "javadoc.jar".to_string(),
             ArtifactType::Headers => "headers.zip".to_string(),
             ArtifactType::Sources => "sources.zip".to_string(),
-            ArtifactType::Shared => format!("{platform}.zip"),
+            ArtifactType::Shared | ArtifactType::SharedOnly => format!("{platform}.zip"),
             ArtifactType::SharedDebug => format!("{platform}debug.zip"),
             ArtifactType::Static => format!("{platform}static.zip"),
             ArtifactType::StaticDebug => format!("{platform}staticdebug.zip"),
         }
     }
-    pub fn debug_release(&self) -> &'static str {
+    pub fn debug_release(&self) -> &'static [&'static str] {
         match self {
-            ArtifactType::Shared | ArtifactType::Static => "release",
-            ArtifactType::SharedDebug | ArtifactType::StaticDebug => "debug",
-            _ => "",
+            ArtifactType::Shared | ArtifactType::Static => &["release"],
+            ArtifactType::SharedDebug | ArtifactType::StaticDebug => &["debug"],
+            ArtifactType::SharedOnly => &["release", "debug"],
+            _ => &[""],
         }
     }
 }
@@ -270,8 +272,7 @@ pub fn download_artifact_zip_to_dir(
         return Err(last_err.expect("no maven repos specified!!!"));
     };
     let mut zipfile = zip::ZipArchive::new(Cursor::new(artifact_data))?;
-    zipfile.extract(dir)?;
-
+    zipfile.extract(&dir)?;
     Ok(())
 }
 
@@ -317,19 +318,21 @@ pub fn download_native_library_artifacts(
     ]);
 
     for artifact_type in artifact_types.iter().cloned() {
-        let output_dir = buildlibs.join(artifact_type.debug_release());
-        std::fs::create_dir_all(&output_dir)?;
-        download_artifact_zip_to_dir(
-            platform,
-            &output_dir,
-            repos,
-            &Artifact {
-                artifact_type,
-                group_id,
-                artifact_id,
-                version,
-            },
-        )?;
+        for dir_type in artifact_type.debug_release() {
+            let output_dir = buildlibs.join(dir_type);
+            std::fs::create_dir_all(&output_dir)?;
+            download_artifact_zip_to_dir(
+                platform,
+                &output_dir,
+                repos,
+                &Artifact {
+                    artifact_type,
+                    group_id,
+                    artifact_id,
+                    version,
+                },
+            )?;
+        }
     }
     std::fs::OpenOptions::new()
         .create(true)
