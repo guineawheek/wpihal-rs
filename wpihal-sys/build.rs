@@ -78,7 +78,7 @@ pub fn main() {
     cc::Build::new()
         .cpp(true)
         .file("shim/HALShim.cpp")
-        .std("c++23")
+        .std("c++20")
         .include(wpilib_native_utils::fix_windows(&buildlibs.join("headers")))
         .compile("HALShim");
 }
